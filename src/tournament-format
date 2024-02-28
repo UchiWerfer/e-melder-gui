@@ -1,0 +1,17 @@
+[Identifikation]
+File=Diskmelder
+Type=V
+Version=4
+{}
+[Meldung]
+Turnier={}
+Datum={}
+Ort={}
+Altergruppe={} ({})
+Geschlecht={}
+[Vereine]
+Anzahl=1
+1=""1",{}"
+[Teilnehmer]
+{}
+Anzahl={}
