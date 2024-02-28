@@ -97,3 +97,29 @@ pub fn write_athletes(path: impl AsRef<Path>, athletes: &[Athlete]) -> io::Resul
     file.write_all(serde_json::to_string(&values)?.as_bytes())?;
     Ok(())
 }
+
+pub fn write_club(path: impl AsRef<Path>, club: &Club) -> io::Result<()> {
+    let mut map = serde_json::Map::new();
+    map.insert(String::from("club"), club.name.clone().into());
+    map.insert(String::from("given"), club.sender.given_name.clone().into());
+    map.insert(String::from("sur"), club.sender.sur_name.clone().into());
+    map.insert(String::from("address"), club.sender.address.clone().into());
+    map.insert(String::from("postal-code"), club.sender.postal_code.into());
+    map.insert(String::from("town"), club.sender.town.clone().into());
+    map.insert(String::from("private"), club.sender.private_phone.clone().into());
+    map.insert(String::from("public"), club.sender.public_phone.clone().into());
+    map.insert(String::from("fax"), club.sender.fax.clone().into());
+    map.insert(String::from("mobile"), club.sender.mobile.clone().into());
+    map.insert(String::from("mail"), club.sender.mail.clone().into());
+    map.insert(String::from("club-number"), club.number.into());
+    map.insert(String::from("county"), club.county.clone().into());
+    map.insert(String::from("region"), club.region.clone().into());
+    map.insert(String::from("state"), club.state.clone().into());
+    map.insert(String::from("group"), club.group.clone().into());
+    map.insert(String::from("state"), club.state.clone().into());
+
+    let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
+
+    file.write_all(serde_json::to_string(&map)?.as_bytes())?;
+    Ok(())
+}

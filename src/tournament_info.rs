@@ -203,16 +203,16 @@ impl Athlete {
 
 pub struct Sender {
     club_name: String,
-    given_name: String,
-    sur_name: String,
-    address: String,
-    postal_code: u16,
-    town: String,
-    private_phone: String,
-    public_phone: String,
-    fax: String,
-    mobile: String,
-    mail: String
+    pub given_name: String,
+    pub sur_name: String,
+    pub address: String,
+    pub postal_code: u16,
+    pub town: String,
+    pub private_phone: String,
+    pub public_phone: String,
+    pub fax: String,
+    pub mobile: String,
+    pub mail: String
 }
 
 impl Sender {
@@ -236,14 +236,14 @@ impl Sender {
 }
 
 pub struct Club {
-    name: String,
-    number: u64,
-    sender: Sender,
-    county: String,
-    region: String,
-    state: String,
-    group: String,
-    nation: String
+    pub name: String,
+    pub number: u64,
+    pub sender: Sender,
+    pub county: String,
+    pub region: String,
+    pub state: String,
+    pub group: String,
+    pub nation: String
 }
 
 impl Club {
