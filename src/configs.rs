@@ -2,9 +2,14 @@ use std::fs::File;
 use std::io;
 use std::io::ErrorKind::Other as Other;
 use std::io::Read;
+use std::io::Write;
 use std::path::Path;
 
-use crate::tournament_info::{Athlete, Belt, Club, Sender, WeightCategory};
+use crate::tournament_info::{Athlete, Belt, Club, Sender, Tournament, WeightCategory};
+
+fn string_to_iso_8859_1_bytes(s: &str) -> Vec<u8> {
+    s.chars().map(|c| { c as u8 }).collect()
+}
 
 #[allow(clippy::cast_possible_truncation)]
 pub fn read_club(path: impl AsRef<Path>) -> io::Result<Club> {
@@ -74,4 +79,21 @@ pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
         ret.push(Athlete::new(athlete_given_name, athlete_sur_name, year, belt, WeightCategory::default()));
     }
     Ok(ret)
+}
+
+pub fn write_tournament(path: impl AsRef<Path>, tournament: &Tournament) -> io::Result<()> {
+    let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
+    file.write_all(&string_to_iso_8859_1_bytes(&tournament.render()))?;
+    Ok(())
+}
+
+pub fn write_athletes(path: impl AsRef<Path>, athletes: &[Athlete]) -> io::Result<()> {
+    let mut values: Vec<serde_json::Value> = Vec::with_capacity(athletes.len());
+    for athlete in athletes {
+        values.push(athlete.serialise());
+    }
+
+    let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
+    file.write_all(serde_json::to_string(&values)?.as_bytes())?;
+    Ok(())
 }
