@@ -147,10 +147,15 @@ pub enum WeightCategoryKind {
     Over
 }
 
-#[derive(Default)]
 pub struct WeightCategory {
     kind: WeightCategoryKind,
     limit: u8
+}
+
+impl Default for WeightCategory {
+    fn default() -> Self {
+        Self { limit: 10, kind: WeightCategoryKind::default() }
+    }
 }
 
 impl WeightCategory {
