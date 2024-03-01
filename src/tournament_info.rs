@@ -180,10 +180,10 @@ impl WeightCategory {
 }
 
 pub struct Athlete {
-    pub given_name: String,
-    pub sur_name: String,
-    pub belt: Belt,
-    pub weight_category: WeightCategory,
+    given_name: String,
+    sur_name: String,
+    belt: Belt,
+    weight_category: WeightCategory,
     birth_year: u16
 }
 
@@ -204,20 +204,44 @@ impl Athlete {
         map.insert(String::from("year"), Value::Number(self.birth_year.into()));
         Value::Object(map)
     }
+
+    pub fn get_given_name(&self) -> &str {
+        &self.given_name
+    }
+
+    pub fn get_sur_name(&self) -> &str {
+        &self.sur_name
+    }
+
+    pub fn get_belt(&self) -> &Belt {
+        &self.belt
+    }
+
+    pub fn get_belt_mut(&mut self) -> &mut Belt {
+        &mut self.belt
+    }
+
+    pub fn get_weight_category(&self) -> &WeightCategory {
+        &self.weight_category
+    }
+
+    pub fn get_weight_category_mut(&mut self) -> &mut WeightCategory {
+        &mut self.weight_category
+    }
 }
 
 pub struct Sender {
     club_name: String,
-    pub given_name: String,
-    pub sur_name: String,
-    pub address: String,
-    pub postal_code: u16,
-    pub town: String,
-    pub private_phone: String,
-    pub public_phone: String,
-    pub fax: String,
-    pub mobile: String,
-    pub mail: String
+    given_name: String,
+    sur_name: String,
+    address: String,
+    postal_code: u16,
+    town: String,
+    private_phone: String,
+    public_phone: String,
+    fax: String,
+    mobile: String,
+    mail: String
 }
 
 impl Sender {
@@ -238,17 +262,57 @@ impl Sender {
             self.fax, self.mobile, self.mail
         )
     }
+
+    pub fn get_given_name(&self) -> &str {
+        &self.given_name
+    }
+
+    pub fn get_sur_name(&self) -> &str {
+        &self.sur_name
+    }
+
+    pub fn get_address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn get_postal_code(&self) -> u16 {
+        self.postal_code
+    }
+
+    pub fn get_town(&self) -> &str {
+        &self.town
+    }
+
+    pub fn get_private_phone(&self) -> &str {
+        &self.private_phone
+    }
+
+    pub fn get_public_phone(&self) -> &str {
+        &self.public_phone
+    }
+
+    pub fn get_fax(&self) -> &str {
+        &self.fax
+    }
+
+    pub fn get_mobile(&self) -> &str {
+        &self.mobile
+    }
+
+    pub fn get_mail(&self) -> &str {
+        &self.mail
+    }
 }
 
 pub struct Club {
-    pub name: String,
-    pub number: u64,
-    pub sender: Sender,
-    pub county: String,
-    pub region: String,
-    pub state: String,
-    pub group: String,
-    pub nation: String
+    name: String,
+    number: u64,
+    sender: Sender,
+    county: String,
+    region: String,
+    state: String,
+    group: String,
+    nation: String
 }
 
 impl Club {
@@ -267,6 +331,38 @@ impl Club {
             self.sender.mobile, self.sender.mail, self.sender.fax, self.county, self.region, self.state, self.group,
             self.nation
         )
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_number(&self) -> u64 {
+        self.number
+    }
+
+    pub fn get_sender(&self) -> &Sender {
+        &self.sender
+    }
+
+    pub fn get_county(&self) -> &str {
+        &self.county
+    }
+
+    pub fn get_region(&self) -> &str {
+        &self.region
+    }
+
+    pub fn get_state(&self) -> &str {
+        &self.state
+    }
+
+    pub fn get_group(&self) -> &str {
+        &self.group
+    }
+
+    pub fn get_nation(&self) -> &str {
+        &self.nation
     }
 }
 

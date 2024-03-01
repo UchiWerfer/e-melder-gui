@@ -1,9 +1,11 @@
+use std::env;
 use std::fs::File;
 use std::io;
 use std::io::ErrorKind::Other as Other;
 use std::io::Read;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 
 use crate::tournament_info::{Athlete, Belt, Club, Sender, Tournament, WeightCategory};
 
@@ -100,26 +102,82 @@ pub fn write_athletes(path: impl AsRef<Path>, athletes: &[Athlete]) -> io::Resul
 
 pub fn write_club(path: impl AsRef<Path>, club: &Club) -> io::Result<()> {
     let mut map = serde_json::Map::new();
-    map.insert(String::from("club"), club.name.clone().into());
-    map.insert(String::from("given"), club.sender.given_name.clone().into());
-    map.insert(String::from("sur"), club.sender.sur_name.clone().into());
-    map.insert(String::from("address"), club.sender.address.clone().into());
-    map.insert(String::from("postal-code"), club.sender.postal_code.into());
-    map.insert(String::from("town"), club.sender.town.clone().into());
-    map.insert(String::from("private"), club.sender.private_phone.clone().into());
-    map.insert(String::from("public"), club.sender.public_phone.clone().into());
-    map.insert(String::from("fax"), club.sender.fax.clone().into());
-    map.insert(String::from("mobile"), club.sender.mobile.clone().into());
-    map.insert(String::from("mail"), club.sender.mail.clone().into());
-    map.insert(String::from("club-number"), club.number.into());
-    map.insert(String::from("county"), club.county.clone().into());
-    map.insert(String::from("region"), club.region.clone().into());
-    map.insert(String::from("state"), club.state.clone().into());
-    map.insert(String::from("group"), club.group.clone().into());
-    map.insert(String::from("state"), club.state.clone().into());
+    map.insert(String::from("club"), club.get_name().into());
+    map.insert(String::from("given"), club.get_sender().get_given_name().into());
+    map.insert(String::from("sur"), club.get_sender().get_sur_name().into());
+    map.insert(String::from("address"), club.get_sender().get_address().into());
+    map.insert(String::from("postal-code"), club.get_sender().get_postal_code().into());
+    map.insert(String::from("town"), club.get_sender().get_town().into());
+    map.insert(String::from("private"), club.get_sender().get_private_phone().into());
+    map.insert(String::from("public"), club.get_sender().get_public_phone().into());
+    map.insert(String::from("fax"), club.get_sender().get_fax().into());
+    map.insert(String::from("mobile"), club.get_sender().get_mobile().into());
+    map.insert(String::from("mail"), club.get_sender().get_mail().into());
+    map.insert(String::from("club-number"), club.get_number().into());
+    map.insert(String::from("county"), club.get_county().into());
+    map.insert(String::from("region"), club.get_region().into());
+    map.insert(String::from("state"), club.get_state().into());
+    map.insert(String::from("group"), club.get_group().into());
+    map.insert(String::from("state"), club.get_state().into());
 
     let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
 
     file.write_all(serde_json::to_string(&map)?.as_bytes())?;
     Ok(())
+}
+
+#[cfg(target_os="linux")]
+fn get_config_dir() -> io::Result<PathBuf> {
+    let xdg_config = env::var("XDG_CONFIG_HOME");
+    if let Ok(path) = xdg_config {
+        Ok(PathBuf::from(path))
+    }
+    else {
+        Ok(home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
+            .join(".config"))
+    }
+}
+
+#[cfg(not(target_os="linux"))]
+fn get_config_dir() -> io::Result<PathBuf> {
+    let app_data = env::var("APPDATA");
+    if let Ok(path) = app_data {
+        Ok(PathBuf::from(path))
+    }
+    else {
+        home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
+    }
+}
+
+fn get_config_file() -> io::Result<PathBuf> {
+    let base_dir = get_config_dir()?;
+    Ok(base_dir.join("e-melder/config.json"))
+}
+
+pub fn get_config(config: &str) -> io::Result<serde_json::Value> {
+    let config_file = get_config_file()?;
+    let mut file = File::options().read(true).open(config_file)?;
+    let mut s = String::new();
+    file.read_to_string(&mut s)?;
+    let parsed = serde_json::from_str::<serde_json::Value>(&s)?;
+    let configs = parsed.as_object().ok_or(
+        io::Error::new(Other, "could not read configs"))?;
+    let config_value = configs.get(config).ok_or(io::Error::new(Other, "did not find config"))?;
+    Ok(config_value.to_owned())
+}
+
+pub fn translate(translation_key: &str) -> io::Result<String> {
+    let lang = String::from(get_config("lang")?.as_str().ok_or(
+        io::Error::new(Other, "lang-config not a string")
+    )?) + ".json";
+    let lang_file_name = get_config_dir()?.join("e-melder").join("lang").join(lang);
+    let mut lang_file = File::options().read(true).open(lang_file_name)?;
+    let mut s = String::new();
+    lang_file.read_to_string(&mut s)?;
+    let parsed: serde_json::Value = serde_json::from_str(&s)?;
+    let translations = parsed.as_object().ok_or(
+        io::Error::new(Other, "could not read configs"))?;
+    let translation = translations.get(translation_key);
+    Ok(String::from(translation.map(|val| {val.as_str().
+        ok_or(io::Error::new(Other, "translation not a string"))}).unwrap_or(Ok(translation_key))?))
 }
