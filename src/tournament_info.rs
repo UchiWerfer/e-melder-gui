@@ -1,7 +1,7 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
-use chrono::DateTime;
-use chrono::Local;
+use chrono::NaiveDate;
 use serde_json::Map;
 use serde_json::Value;
 
@@ -140,13 +140,14 @@ impl FromStr for Belt {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub enum WeightCategoryKind {
     #[default]
     Under,
     Over
 }
 
+#[derive(Clone, Copy)]
 pub struct WeightCategory {
     kind: WeightCategoryKind,
     limit: u8
@@ -159,7 +160,7 @@ impl Default for WeightCategory {
 }
 
 impl WeightCategory {
-    pub fn render(&self) -> String {
+    pub fn render(self) -> String {
         match self.kind {
             WeightCategoryKind::Over => String::new(),
             WeightCategoryKind::Under => format!("{}", self.limit)
@@ -230,6 +231,7 @@ impl Athlete {
     }
 }
 
+#[derive(Clone)]
 pub struct Sender {
     club_name: String,
     given_name: String,
@@ -304,6 +306,7 @@ impl Sender {
     }
 }
 
+#[derive(Clone)]
 pub struct Club {
     name: String,
     number: u64,
@@ -366,6 +369,7 @@ impl Club {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum GenderCategory {
     Mixed,
     Male,
@@ -373,7 +377,7 @@ pub enum GenderCategory {
 }
 
 impl GenderCategory {
-    pub fn render(&self) -> &'static str {
+    pub fn render(self) -> &'static str {
         match self {
             Self::Female => "w",
             Self::Male => "m",
@@ -395,7 +399,7 @@ impl GenderCategory {
 
 pub struct Tournament {
     name: String,
-    date: DateTime<Local>,
+    date: NaiveDate,
     place: String,
     age_category: String,
     gender_category: GenderCategory,
@@ -404,7 +408,7 @@ pub struct Tournament {
 }
 
 impl Tournament {
-    pub fn new(name: String, date: DateTime<Local>, place: String, age_category: String, gender: GenderCategory, club: Club, athletes: Vec<Athlete>) -> Self {
+    pub fn new(name: String, date: NaiveDate, place: String, age_category: String, gender: GenderCategory, club: Club, athletes: Vec<Athlete>) -> Self {
         Self {
             name, date, place, age_category, gender_category: gender, club, athletes
         }
@@ -417,6 +421,18 @@ impl Tournament {
             self.age_category, self.gender_category.render(), self.gender_category.render(), self.club.render(), render(&self.athletes), self.athletes.len()
         )
     }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_age_category(&self) -> &str {
+        &self.age_category
+    }
+
+    pub fn get_gender_category(&self) -> GenderCategory {
+        self.gender_category
+    }
 }
 
 fn render(athletes: &[Athlete]) -> String {
@@ -428,6 +444,55 @@ fn render(athletes: &[Athlete]) -> String {
         ));
         if i < athletes.len() - 1 {
             ret.push('\n');
+        }
+    }
+    ret
+}
+
+pub struct RegisteringAthlete {
+    given_name: String,
+    sur_name: String,
+    belt: Belt,
+    weight_category: WeightCategory,
+    birth_year: u16,
+    gender_category: GenderCategory,
+    age_category: String
+}
+
+impl RegisteringAthlete {
+    pub fn new(given_name: String, sur_name: String, belt: Belt, weight_category: WeightCategory, birth_year: u16, gender_category: GenderCategory,
+    age_category: String) -> Self {
+        Self {
+            given_name, sur_name, belt, weight_category, birth_year, gender_category, age_category
+        }
+    }
+
+    pub fn from_athlete(athlete: &Athlete) -> Self {
+        Self::new(athlete.given_name.clone(), athlete.sur_name.clone(), athlete.belt,
+        athlete.weight_category, athlete.birth_year, GenderCategory::Mixed, String::new())
+    }
+}
+
+pub fn registering_athletes_to_tournaments(registering_athletes: &[RegisteringAthlete], name: &str, date: NaiveDate,
+place: &str, club: &Club) -> Vec<Tournament> {
+    let mut tournament_meta: HashMap<(String, GenderCategory), usize> = HashMap::new();
+    let mut ret: Vec<Tournament> = Vec::new();
+
+    for registering_athlete in registering_athletes {
+        let index_opt = tournament_meta.get(&(registering_athlete.age_category.clone(), registering_athlete.gender_category));
+        if let Some(index) = index_opt {
+            ret[*index].athletes.push(Athlete::new(registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(),
+                registering_athlete.birth_year, registering_athlete.belt, registering_athlete.weight_category));
+        }
+        else {
+            ret.push(
+                Tournament::new(name.to_owned(), date, place.to_owned(), registering_athlete.age_category.clone(),
+                registering_athlete.gender_category, club.clone(), vec![Athlete::new(
+                    registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(), registering_athlete.birth_year,
+                    registering_athlete.belt, registering_athlete.weight_category
+                )])
+            );
+            tournament_meta.insert((registering_athlete.age_category.clone(), registering_athlete.gender_category), ret.len() - 1);
         }
     }
     ret

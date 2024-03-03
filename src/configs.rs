@@ -83,7 +83,7 @@ pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
     Ok(ret)
 }
 
-pub fn write_tournament(path: impl AsRef<Path>, tournament: &Tournament) -> io::Result<()> {
+fn write_tournament(path: impl AsRef<Path>, tournament: &Tournament) -> io::Result<()> {
     let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
     file.write_all(&string_to_iso_8859_1_bytes(&tournament.render()))?;
     Ok(())
@@ -180,4 +180,18 @@ pub fn translate(translation_key: &str) -> io::Result<String> {
     let translation = translations.get(translation_key);
     Ok(String::from(translation.map(|val| {val.as_str().
         ok_or(io::Error::new(Other, "translation not a string"))}).unwrap_or(Ok(translation_key))?))
+}
+
+pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
+    let tournament_base_value = get_config("tournament-basedir")?;
+    let tournament_base = PathBuf::from(tournament_base_value.as_str().ok_or(io::Error::new(Other,
+        "tournament-basedir not a string"))?);
+    
+    for tournament in tournaments {
+        let path = tournament_base.join(format!("{}{} ({}).dm4", tournament.get_name(), tournament.get_age_category(),
+            tournament.get_gender_category().render()));
+        write_tournament(path, tournament)?;
+    }
+
+    Ok(())
 }
