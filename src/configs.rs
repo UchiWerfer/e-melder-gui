@@ -130,7 +130,13 @@ pub fn write_club(path: impl AsRef<Path>, club: &Club) -> io::Result<()> {
 fn get_config_dir() -> io::Result<PathBuf> {
     let xdg_config = env::var("XDG_CONFIG_HOME");
     if let Ok(path) = xdg_config {
-        Ok(PathBuf::from(path))
+        if path.is_empty() {
+            Ok(home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
+            .join(".config"))
+        }
+        else {
+            Ok(PathBuf::from(path))
+        }
     }
     else {
         Ok(home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
