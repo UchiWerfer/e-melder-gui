@@ -232,12 +232,8 @@ impl Athlete {
         &mut self.belt
     }
 
-    pub fn get_weight_category(&self) -> &WeightCategory {
-        &self.weight_category
-    }
-
-    pub fn get_weight_category_mut(&mut self) -> &mut WeightCategory {
-        &mut self.weight_category
+    pub fn get_birth_year(&self) -> u16 {
+        self.birth_year
     }
 }
 
@@ -465,17 +461,6 @@ impl GenderCategory {
             Self::Male => "m",
             Self::Mixed => "g"
         }
-    }
-
-    pub fn from_str(s: &str) -> Option<Self> {
-        Some(match s {
-            "w" => Self::Female,
-            "m" => Self::Male,
-            "g" => Self::Mixed,
-            _ => {
-                return None;
-            }
-        })
     }
 }
 
