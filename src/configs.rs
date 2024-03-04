@@ -145,7 +145,7 @@ fn get_config_dir() -> io::Result<PathBuf> {
         Ok(PathBuf::from(path))
     }
     else {
-        home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
+        home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))
     }
 }
 
