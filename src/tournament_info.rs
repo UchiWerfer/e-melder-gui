@@ -5,8 +5,9 @@ use chrono::NaiveDate;
 use serde_json::Map;
 use serde_json::Value;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 pub enum Belt {
+    #[default]
     Kyu9,
     Kyu8,
     Kyu7,
@@ -140,14 +141,14 @@ impl FromStr for Belt {
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 pub enum WeightCategoryKind {
     #[default]
     Under,
     Over
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct WeightCategory {
     kind: WeightCategoryKind,
     limit: u8
@@ -178,8 +179,17 @@ impl WeightCategory {
         let limit = s[1..(s.len())].parse().ok()?;
         Some(Self { kind, limit })
     }
+
+    #[allow(clippy::inherent_to_string)]
+    fn to_string(self) -> String {
+        match self.kind {
+            WeightCategoryKind::Under => format!("-{}", self.limit),
+            WeightCategoryKind::Over => format!("+{}", self.limit)
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct Athlete {
     given_name: String,
     sur_name: String,
@@ -231,7 +241,7 @@ impl Athlete {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Sender {
     club_name: String,
     given_name: String,
@@ -304,9 +314,49 @@ impl Sender {
     pub fn get_mail(&self) -> &str {
         &self.mail
     }
+
+    pub fn get_given_name_mut(&mut self) -> &mut String {
+        &mut self.given_name
+    }
+
+    pub fn get_sur_name_mut(&mut self) -> &mut String {
+        &mut self.sur_name
+    }
+
+    pub fn get_address_mut(&mut self) -> &mut String {
+        &mut self.address
+    }
+
+    pub fn get_postal_code_mut(&mut self) -> &mut u16 {
+        &mut self.postal_code
+    }
+
+    pub fn get_town_mut(&mut self) -> &mut String {
+        &mut self.town
+    }
+
+    pub fn get_private_phone_mut(&mut self) -> &mut String {
+        &mut self.private_phone
+    }
+
+    pub fn get_public_phone_mut(&mut self) -> &mut String {
+        &mut self.public_phone
+    }
+
+    pub fn get_fax_mut(&mut self) -> &mut String {
+        &mut self.fax
+    }
+
+    pub fn get_mobile_mut(&mut self) -> &mut String {
+        &mut self.mobile
+    }
+
+    pub fn get_mail_mut(&mut self) -> &mut String {
+        &mut self.mail
+    }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Club {
     name: String,
     number: u64,
@@ -367,9 +417,41 @@ impl Club {
     pub fn get_nation(&self) -> &str {
         &self.nation
     }
+
+    pub fn get_name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+
+    pub fn get_number_mut(&mut self) -> &mut u64 {
+        &mut self.number
+    }
+
+    pub fn get_sender_mut(&mut self) -> &mut Sender {
+        &mut self.sender
+    }
+
+    pub fn get_county_mut(&mut self) -> &mut String {
+        &mut self.county
+    }
+
+    pub fn get_region_mut(&mut self) -> &mut String {
+        &mut self.region
+    }
+
+    pub fn get_state_mut(&mut self) -> &mut String {
+        &mut self.state
+    }
+
+    pub fn get_group_mut(&mut self) -> &mut String {
+        &mut self.group
+    }
+
+    pub fn get_nation_mut(&mut self) -> &mut String {
+        &mut self.nation
+    }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum GenderCategory {
     Mixed,
     Male,
@@ -449,18 +531,19 @@ fn render(athletes: &[Athlete]) -> String {
     ret
 }
 
+#[derive(Debug)]
 pub struct RegisteringAthlete {
     given_name: String,
     sur_name: String,
     belt: Belt,
-    weight_category: WeightCategory,
+    weight_category: String,
     birth_year: u16,
     gender_category: GenderCategory,
     age_category: String
 }
 
 impl RegisteringAthlete {
-    pub fn new(given_name: String, sur_name: String, belt: Belt, weight_category: WeightCategory, birth_year: u16, gender_category: GenderCategory,
+    pub fn new(given_name: String, sur_name: String, belt: Belt, weight_category: String, birth_year: u16, gender_category: GenderCategory,
     age_category: String) -> Self {
         Self {
             given_name, sur_name, belt, weight_category, birth_year, gender_category, age_category
@@ -469,12 +552,44 @@ impl RegisteringAthlete {
 
     pub fn from_athlete(athlete: &Athlete) -> Self {
         Self::new(athlete.given_name.clone(), athlete.sur_name.clone(), athlete.belt,
-        athlete.weight_category, athlete.birth_year, GenderCategory::Mixed, String::new())
+        athlete.weight_category.to_string(), athlete.birth_year, GenderCategory::Mixed, String::new())
+    }
+
+    pub fn get_given_name(&self) -> &str {
+        &self.given_name
+    }
+
+    pub fn get_sur_name(&self) -> &str {
+        &self.sur_name
+    }
+
+    pub fn get_belt(&self) -> Belt {
+        self.belt
+    }
+
+    pub fn get_weight_category_mut(&mut self) -> &mut String {
+        &mut self.weight_category
+    }
+
+    pub fn get_birth_year(&self) -> u16 {
+        self.birth_year
+    }
+
+    pub fn get_gender_category(&self) -> &GenderCategory {
+        &self.gender_category
+    }
+
+    pub fn get_gender_category_mut(&mut self) -> &mut GenderCategory {
+        &mut self.gender_category
+    }
+
+    pub fn get_age_category_mut(&mut self) -> &mut String {
+        &mut self.age_category
     }
 }
 
 pub fn registering_athletes_to_tournaments(registering_athletes: &[RegisteringAthlete], name: &str, date: NaiveDate,
-place: &str, club: &Club) -> Vec<Tournament> {
+place: &str, club: &Club) -> Option<Vec<Tournament>> {
     let mut tournament_meta: HashMap<(String, GenderCategory), usize> = HashMap::new();
     let mut ret: Vec<Tournament> = Vec::new();
 
@@ -482,18 +597,19 @@ place: &str, club: &Club) -> Vec<Tournament> {
         let index_opt = tournament_meta.get(&(registering_athlete.age_category.clone(), registering_athlete.gender_category));
         if let Some(index) = index_opt {
             ret[*index].athletes.push(Athlete::new(registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(),
-                registering_athlete.birth_year, registering_athlete.belt, registering_athlete.weight_category));
+                registering_athlete.birth_year, registering_athlete.belt,
+                WeightCategory::from_str(&registering_athlete.weight_category)?));
         }
         else {
             ret.push(
                 Tournament::new(name.to_owned(), date, place.to_owned(), registering_athlete.age_category.clone(),
                 registering_athlete.gender_category, club.clone(), vec![Athlete::new(
                     registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(), registering_athlete.birth_year,
-                    registering_athlete.belt, registering_athlete.weight_category
+                    registering_athlete.belt, WeightCategory::from_str(&registering_athlete.weight_category)?
                 )])
             );
             tournament_meta.insert((registering_athlete.age_category.clone(), registering_athlete.gender_category), ret.len() - 1);
         }
     }
-    ret
+    Some(ret)
 }

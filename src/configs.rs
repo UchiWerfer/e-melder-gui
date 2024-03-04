@@ -118,7 +118,7 @@ pub fn write_club(path: impl AsRef<Path>, club: &Club) -> io::Result<()> {
     map.insert(String::from("region"), club.get_region().into());
     map.insert(String::from("state"), club.get_state().into());
     map.insert(String::from("group"), club.get_group().into());
-    map.insert(String::from("state"), club.get_state().into());
+    map.insert(String::from("nation"), club.get_nation().into());
 
     let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
 
@@ -194,4 +194,18 @@ pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+pub fn write_config(config: &str, value: serde_json::Value) -> io::Result<()> {
+    let config_file = get_config_file()?;
+    let mut file_read = File::options().read(true).open(&config_file)?;
+    let mut s = String::new();
+    file_read.read_to_string(&mut s)?;
+    let mut parsed: serde_json::Value = serde_json::from_str(&s)?;
+    let configs = parsed.as_object_mut().ok_or(
+        io::Error::new(Other, "could not read configs"))?;
+    configs.insert(config.to_owned(), value);
+    drop(file_read);
+    let mut file_write = File::options().write(true).truncate(true).open(&config_file)?;
+    file_write.write_all(serde_json::to_string(&configs)?.as_bytes())
 }
