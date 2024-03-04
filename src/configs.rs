@@ -127,7 +127,7 @@ pub fn write_club(path: impl AsRef<Path>, club: &Club) -> io::Result<()> {
 }
 
 #[cfg(target_os="linux")]
-fn get_config_dir() -> io::Result<PathBuf> {
+pub fn get_config_dir() -> io::Result<PathBuf> {
     let xdg_config = env::var("XDG_CONFIG_HOME");
     if let Ok(path) = xdg_config {
         if path.is_empty() {
@@ -145,7 +145,7 @@ fn get_config_dir() -> io::Result<PathBuf> {
 }
 
 #[cfg(not(target_os="linux"))]
-fn get_config_dir() -> io::Result<PathBuf> {
+pub fn get_config_dir() -> io::Result<PathBuf> {
     let app_data = env::var("APPDATA");
     if let Ok(path) = app_data {
         Ok(PathBuf::from(path))
@@ -155,7 +155,7 @@ fn get_config_dir() -> io::Result<PathBuf> {
     }
 }
 
-fn get_config_file() -> io::Result<PathBuf> {
+pub fn get_config_file() -> io::Result<PathBuf> {
     let base_dir = get_config_dir()?;
     Ok(base_dir.join("e-melder/config.json"))
 }

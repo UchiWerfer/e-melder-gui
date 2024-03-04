@@ -1,7 +1,9 @@
 mod configs;
 mod tournament_info;
 
+use std::fs::{create_dir_all, File};
 use std::{io, process};
+use std::io::Write;
 use std::path::PathBuf;
 
 use chrono::{Local, NaiveDate};
@@ -9,9 +11,15 @@ use eframe::CreationContext;
 use egui::Ui;
 use egui::Visuals;
 
-use configs::{get_config, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
+use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
 use egui_extras::{Column, TableBuilder};
 use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
+
+fn get_default_config() -> io::Result<String> {
+    Ok(format!("{{\"lang\": \"de\", \"dark-mode\": false, \"club-file\": {}, \"athletes-file\": {}, \"tournament-basedir\": \"\"",
+        get_config_dir()?.join("e-melder").join("athletes.json").to_str().expect("unreachable"),
+        get_config_dir()?.join("e-melder").join("club.json").to_str().expect("unreachable")))
+}
 
 #[derive(Default, Debug)]
 enum Mode {
@@ -92,8 +100,30 @@ impl EMelderApp {
             .ok_or(io::Error::new(io::ErrorKind::Other, "club-file not a string"))?);
         let dark_mode = dark_mode_value.as_bool().ok_or(io::Error::new(
             io::ErrorKind::Other, "dark-mode not a bool"))?;
-        let athletes = read_athletes(athlete_file)?;
-        let club = read_club(club_file)?;
+        let athletes = match read_athletes(athlete_file) {
+            Ok(athletes) => athletes,
+            Err(err) => {
+                if err.kind() == io::ErrorKind::NotFound {
+                    Vec::new()
+                }
+                else {
+                    eprintln!("failed to read athletes: {err}");
+                    process::exit(1)
+                }
+            }
+        };
+        let club = match read_club(club_file) {
+            Ok(club) => club,
+            Err(err) => {
+                if err.kind() == io::ErrorKind::NotFound {
+                    Club::default()
+                }
+                else {
+                    eprintln!("failed to read club: {err}");
+                    process::exit(1)
+                }
+            }
+        };
 
         let visuals = if dark_mode { Visuals::dark() } else { Visuals::light() };
         
@@ -663,6 +693,7 @@ impl EMelderApp {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn show_delete(&mut self, ui: &mut Ui) {
         let mut to_delete = None;
         let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 4)
@@ -752,6 +783,7 @@ impl EMelderApp {
                     process::exit(1)
                 }
             };
+            #[allow(clippy::single_match_else)]
             let path = PathBuf::from(match athletes_path.as_str() {
                 Some(path) => path,
                 None => {
@@ -1096,6 +1128,52 @@ impl eframe::App for EMelderApp {
 }
 
 fn main() -> Result<(), eframe::Error> {
+    let config_file = match get_config_file() {
+        Ok(config_file) => config_file,
+        Err(err) => {
+            eprintln!("failed to get config-file: {err}");
+            process::exit(1)
+        }
+    };
+
+    if !config_file.exists() {
+        #[allow(clippy::single_match_else)]
+        match create_dir_all(match config_file.parent() {
+            Some(config_file_parent) => config_file_parent,
+            None => {
+                eprintln!("config-file does not have a parent-directory");
+                process::exit(1)
+            }
+        }) {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to create neccessary directories for config-file: {err}");
+                process::exit(1)
+            }
+        }
+
+        let mut config_file = match File::options().write(true).create_new(true).open(config_file) {
+            Ok(config_file) => config_file,
+            Err(err) => {
+                eprintln!("failed to create config file: {err}");
+                process::exit(1)
+            }
+        };
+
+        match config_file.write_all(match get_default_config() {
+            Ok(default_configs) => default_configs,
+            Err(err) => {
+                eprintln!("failed to get default-configs: {err}");
+                process::exit(1)
+            }
+        }.as_bytes()) {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to write default-configs: {err}");
+            }
+        }
+    }
+
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default(),
         renderer: eframe::Renderer::Wgpu,

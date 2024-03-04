@@ -237,7 +237,7 @@ impl Athlete {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Sender {
     club_name: String,
     given_name: String,
@@ -352,7 +352,7 @@ impl Sender {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Club {
     name: String,
     number: u64,
