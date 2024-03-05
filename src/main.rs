@@ -6,6 +6,8 @@ use std::{io, process};
 use std::io::Write;
 use std::path::PathBuf;
 
+static DEFAULT_TRANSLATIONS: &'static str = include_str!("../lang/de.json");
+
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
 use egui::Ui;
@@ -1170,6 +1172,40 @@ fn main() -> Result<(), eframe::Error> {
             Ok(()) => {},
             Err(err) => {
                 eprintln!("failed to write default-configs: {err}");
+            }
+        }
+    }
+
+    let lang_file = match get_config_dir() {
+        Ok(lang_file) => lang_file,
+        Err(err) => {
+            eprintln!("failed to get config dir: {err}");
+            process::exit(1)
+        }
+    }.join("e-melder").join("lang").join("de.json");
+
+    if !lang_file.exists() {
+        match create_dir_all(lang_file.parent().expect("unreachable")) {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to create neccessary directories for lang-file: {err}");
+                process::exit(1)
+            }   
+        }
+
+        let mut lang_file = match File::options().write(true).create_new(true).open(lang_file) {
+            Ok(lang_file) => lang_file,
+            Err(err) => {
+                eprintln!("failed to create lang-file: {err}");
+                process::exit(1)
+            }
+        };
+
+        match lang_file.write_all(DEFAULT_TRANSLATIONS.as_bytes()) {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to write default language: {err}");
+                process::exit(1)
             }
         }
     }
