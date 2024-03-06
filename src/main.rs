@@ -6,7 +6,7 @@ use std::{io, process};
 use std::io::Write;
 use std::path::PathBuf;
 
-static DEFAULT_TRANSLATIONS: &'static str = include_str!("../lang/de.json");
+static DEFAULT_TRANSLATIONS: &str = include_str!("../lang/de.json");
 
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
@@ -1131,6 +1131,7 @@ impl eframe::App for EMelderApp {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<(), eframe::Error> {
     let config_file = match get_config_file() {
         Ok(config_file) => config_file,
