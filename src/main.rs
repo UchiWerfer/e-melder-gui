@@ -17,10 +17,12 @@ use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_c
 use egui_extras::{Column, TableBuilder};
 use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
 
-fn get_default_config() -> io::Result<String> {
-    Ok(format!("{{\"lang\": \"de\", \"dark-mode\": false, \"club-file\": {}, \"athletes-file\": {}, \"tournament-basedir\": \"\"",
-        get_config_dir()?.join("e-melder").join("athletes.json").to_str().expect("unreachable"),
-        get_config_dir()?.join("e-melder").join("club.json").to_str().expect("unreachable")))
+fn get_default_config() -> io::Result<(String, PathBuf, PathBuf)> {
+    let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
+    let club_file = get_config_dir()?.join("e-melder").join("club.json");
+    Ok((format!("{{\"lang\": \"de\", \"dark-mode\": false, \"club-file\": {}, \"athletes-file\": {}, \"tournament-basedir\": \"\"",
+        athletes_file.to_str().expect("unreachable"),
+        club_file.to_str().expect("unreachable")), athletes_file, club_file))
 }
 
 #[derive(Default, Debug)]
@@ -1162,16 +1164,42 @@ fn main() -> Result<(), eframe::Error> {
             }
         };
 
-        match config_file.write_all(match get_default_config() {
+        let (default_configs, athletes_file_path, club_file_path) = match get_default_config() {
             Ok(default_configs) => default_configs,
             Err(err) => {
                 eprintln!("failed to get default-configs: {err}");
                 process::exit(1)
             }
-        }.as_bytes()) {
+        };
+
+        match config_file.write_all(default_configs.as_bytes()) {
             Ok(()) => {},
             Err(err) => {
                 eprintln!("failed to write default-configs: {err}");
+            }
+        }
+
+        let mut athletes_file = match File::options().write(true).create(true).truncate(true).open(athletes_file_path) {
+            Ok(athletes_file) => athletes_file,
+            Err(err) => {
+                eprintln!("failed to open athletes-file: {err}");
+                process::exit(1)
+            }
+        };
+        
+        match athletes_file.write_all(b"[]") {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to write athletes: {err}");
+                process::exit(1);
+            }
+        }
+
+        match write_club(club_file_path, &Club::default()) {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to write club-data: {err}");
+                process::exit(1)
             }
         }
     }
