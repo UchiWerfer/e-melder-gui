@@ -9,7 +9,5 @@ It is designed to have a better UX than the official application and to be, diff
 3. Do NOT forget to follow the steps described in the First Setup section.
 
 # First Setup
-1. Add at least one (dummy) athlete (and save them).
-2. Add the club-data (or a dummy variantion of it) and save it.
-3. Enter the path to the destination of the files for signing up.
-4. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the default language, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
+1. Enter the path to the destination of the files for signing up.
+2. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the default language, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
