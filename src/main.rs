@@ -1085,16 +1085,6 @@ impl eframe::App for EMelderApp {
                     self.mode = Mode::Graduating;
                 }
 
-                if ui.button(match translate("application.edit") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
-                    }
-                }).clicked() {
-                    self.mode = Mode::EditClub;
-                }
-
                 if ui.button(match translate("application.delete") {
                     Ok(translation) => translation,
                     Err(err) => {
@@ -1103,6 +1093,16 @@ impl eframe::App for EMelderApp {
                     }
                 }).clicked() {
                     self.mode = Mode::Deleting;
+                }
+                
+                if ui.button(match translate("application.edit") {
+                    Ok(translation) => translation,
+                    Err(err) => {
+                        eprintln!("failed to get translation: {err}");
+                        process::exit(1)
+                    }
+                }).clicked() {
+                    self.mode = Mode::EditClub;
                 }
 
                 if ui.button(match translate("application.config") {
