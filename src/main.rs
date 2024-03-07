@@ -6,7 +6,8 @@ use std::{io, process};
 use std::io::Write;
 use std::path::PathBuf;
 
-static DEFAULT_TRANSLATIONS: &str = include_str!("../lang/de.json");
+static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
+static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
@@ -1211,7 +1212,7 @@ fn main() -> Result<(), eframe::Error> {
             eprintln!("failed to get config dir: {err}");
             process::exit(1)
         }
-    }.join("e-melder").join("lang").join("de.json");
+    }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").expect("unreachable")));
 
     if !lang_file.exists() {
         match create_dir_all(lang_file.parent().expect("unreachable")) {
@@ -1230,7 +1231,13 @@ fn main() -> Result<(), eframe::Error> {
             }
         };
 
-        match lang_file.write_all(DEFAULT_TRANSLATIONS.as_bytes()) {
+        let translations = match get_config("lang").expect("unreachable").as_str().expect("unreachable") {
+            "de" => DEFAULT_TRANSLATIONS_DE,
+            "en" => DEFAULT_TRANSLATIONS_EN,
+            _ => "{}"
+        };
+
+        match lang_file.write_all(translations.as_bytes()) {
             Ok(()) => {},
             Err(err) => {
                 eprintln!("failed to write default language: {err}");
