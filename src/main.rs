@@ -6,17 +6,17 @@ use std::{io, process};
 use std::io::Write;
 use std::path::PathBuf;
 
-static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
-static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
-use egui::Ui;
-use egui::Visuals;
+use egui_extras::{Column, TableBuilder};
+use egui::{Ui, Visuals};
 
 use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
-use egui_extras::{Column, TableBuilder};
 use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
+
+static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
+static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 
 fn get_default_config() -> io::Result<(String, PathBuf, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
@@ -1094,7 +1094,7 @@ impl eframe::App for EMelderApp {
                 }).clicked() {
                     self.mode = Mode::Deleting;
                 }
-                
+
                 if ui.button(match translate("application.edit") {
                     Ok(translation) => translation,
                     Err(err) => {
