@@ -189,6 +189,9 @@ pub fn translate(translation_key: &str) -> io::Result<String> {
 }
 
 pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
+    if tournaments.is_empty() {
+        return Ok(());
+    }
     let tournament_base_value = get_config("tournament-basedir")?;
     let tournament_base = PathBuf::from(tournament_base_value.as_str().ok_or(io::Error::new(Other,
         "tournament-basedir not a string"))?);
