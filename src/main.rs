@@ -243,7 +243,7 @@ impl EMelderApp {
         if ui.button(match translate("register.register") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation {err}");
+                eprintln!("failed to get translation: {err}");
                 process::exit(1)
             }
         }).clicked() {
@@ -527,7 +527,7 @@ impl EMelderApp {
             ui.label(match translate("edit.postal_code") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation {err}");
+                    eprintln!("failed to get translation: {err}");
                     process::exit(1)
                 }
             });
