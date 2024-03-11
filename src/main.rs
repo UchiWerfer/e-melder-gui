@@ -425,6 +425,7 @@ impl EMelderApp {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
@@ -755,6 +756,7 @@ impl EMelderApp {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
