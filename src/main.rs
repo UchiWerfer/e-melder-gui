@@ -236,6 +236,8 @@ impl EMelderApp {
                     self.registering.athletes.push(
                         RegisteringAthlete::from_athlete(athlete)
                     );
+                    self.registering.sur_name.clear();
+                    self.registering.given_name.clear();
                 }
             }
         }
