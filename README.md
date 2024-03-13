@@ -10,4 +10,4 @@ It is designed to have a better UX than the official application and to be, diff
 
 # First Setup
 1. Enter the path to the destination of the files for signing up.
-2. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the default language, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
+2. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the supported languages, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
