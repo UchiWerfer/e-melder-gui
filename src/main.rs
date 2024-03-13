@@ -1216,7 +1216,7 @@ fn main() -> Result<(), eframe::Error> {
             eprintln!("failed to get config dir: {err}");
             process::exit(1)
         }
-    }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").expect("unreachable")));
+    }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").expect("unreachable").as_str().expect("unreachable")));
 
     if !lang_file.exists() {
         match create_dir_all(lang_file.parent().expect("unreachable")) {
