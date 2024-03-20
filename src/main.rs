@@ -13,6 +13,7 @@ use egui_extras::{Column, TableBuilder};
 use egui::{Ui, Visuals};
 
 use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
+use serde_json::Map;
 use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
 
 static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
@@ -21,9 +22,13 @@ static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 fn get_default_config() -> io::Result<(String, PathBuf, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
     let club_file = get_config_dir()?.join("e-melder").join("club.json");
-    Ok((format!("{{\"lang\": \"de\", \"dark-mode\": false, \"club-file\": {}, \"athletes-file\": {}, \"tournament-basedir\": \"\"",
-        athletes_file.to_str().expect("unreachable"),
-        club_file.to_str().expect("unreachable")), athletes_file, club_file))
+    let mut default_config = Map::new();
+    default_config.insert(String::from("lang"), "de".into());
+    default_config.insert(String::from("dark-mode"), false.into());
+    default_config.insert(String::from("club-file"), club_file.to_str().expect("unreachable").into());
+    default_config.insert(String::from("athletes-file"), athletes_file.to_str().expect("unreachable").into());
+    default_config.insert(String::from("tournament-basedir"), "".into());
+    Ok((serde_json::to_string(&default_config).expect("unreachable"), athletes_file, club_file))
 }
 
 #[derive(Default, Debug)]
