@@ -6,6 +6,7 @@
     "application.edit": "Edit club-data",
     "application.delete": "Delete an athlete",
     "application.config": "Settings",
+    "application.about": "About",
     "add.given_name": "Given name:",
     "add.sur_name": "Surname:",
     "add.belt": "Belt",
@@ -81,5 +82,8 @@
     "delete.sur_name": "Surname",
     "delete.year": "Year of birth",
     "delete.belt": "Belt",
-    "delete.delete": "Delete"
+    "delete.delete": "Delete",
+    "about.version": "Version:",
+    "about.license": "License:",
+    "about.source_code": "Source code:"
 }

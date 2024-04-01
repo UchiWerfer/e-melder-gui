@@ -19,6 +19,11 @@ use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, 
 static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
 static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 
+static VERSION: &str = include_str!("version");
+static LICENSE: &str = "GNU GPL v2";
+static LICENSE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui/blob/master/LICENSE";
+static CODE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui";
+
 fn get_default_config() -> io::Result<(String, PathBuf, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
     let club_file = get_config_dir()?.join("e-melder").join("club.json");
@@ -39,7 +44,8 @@ enum Mode {
     Deleting,
     Graduating,
     EditClub,
-    Config
+    Config,
+    About
 }
 
 #[derive(Debug)]
@@ -917,6 +923,45 @@ impl EMelderApp {
         }
     }
 
+    fn show_about(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.label(match translate("about.version") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            });
+            ui.label(VERSION);
+        });
+
+        ui.horizontal(|ui| {
+            ui.label(match translate("about.license") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            });
+            if ui.link(LICENSE).clicked() {
+                let _ = open::that_detached(LICENSE_LINK);
+            }
+        });
+
+        ui.horizontal(|ui| {
+            ui.label(match translate("about.source_code") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            });
+            if ui.link(CODE_LINK).clicked() {
+                let _ = open::that_detached(CODE_LINK);
+            }
+        });
+    }
+
     #[allow(clippy::too_many_lines)]
     fn show_table_registering(&mut self, ui: &mut Ui) {
         let mut to_delete = None;
@@ -1123,6 +1168,16 @@ impl eframe::App for EMelderApp {
                 }).clicked() {
                     self.mode = Mode::Config;
                 }
+
+                if ui.button(match translate("application.about") {
+                    Ok(translation) => translation,
+                    Err(err) => {
+                        eprintln!("failed to get translation: {err}");
+                        process::exit(1)
+                    }
+                }).clicked() {
+                    self.mode = Mode::About;
+                }
             });
 
             match self.mode {
@@ -1131,7 +1186,8 @@ impl eframe::App for EMelderApp {
                 Mode::Graduating => self.show_graduating(ui),
                 Mode::EditClub => self.show_edit(ui),
                 Mode::Deleting => self.show_delete(ui),
-                Mode::Config => self.show_config(ui)
+                Mode::Config => self.show_config(ui),
+                Mode::About => self.show_about(ui)
             }
             #[cfg(feature="debugging")]
             if ui.button("debug").clicked() {
@@ -1256,7 +1312,7 @@ fn main() -> Result<(), eframe::Error> {
     }
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([950.0, 600.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([1100.0, 600.0]),
         renderer: eframe::Renderer::Wgpu,
 
         ..Default::default()

@@ -6,6 +6,7 @@
     "application.edit": "Vereinsdaten bearbeiten",
     "application.delete": "Athleten (m/w/d) entfernen",
     "application.config": "Einstellungen",
+    "application.about": "Über",
     "add.given_name": "Vorname:",
     "add.sur_name": "Nachname:",
     "add.belt": "Graduierung",
@@ -81,5 +82,8 @@
     "delete.sur_name": "Nachname",
     "delete.year": "Geburtsjahr",
     "delete.belt": "Graduierung",
-    "delete.delete": "Entfernen"
+    "delete.delete": "Entfernen",
+    "about.version": "Version:",
+    "about.license": "Lizenz:",
+    "about.source_code": "Quellcode:"
 }
