@@ -6,14 +6,13 @@ use std::{io, process};
 use std::io::Write;
 use std::path::PathBuf;
 
-
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
 use egui_extras::{Column, TableBuilder};
 use egui::{Ui, Visuals};
+use serde_json::Map;
 
 use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
-use serde_json::Map;
 use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
 
 static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
@@ -120,6 +119,7 @@ impl EMelderApp {
             Ok(athletes) => athletes,
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
+                    // e.g. at initial run or for using an alternative athletes-file
                     Vec::new()
                 }
                 else {
@@ -132,6 +132,7 @@ impl EMelderApp {
             Ok(club) => club,
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
+                    // e.g. at initial run or for using an alternative club-file
                     Club::default()
                 }
                 else {
@@ -267,7 +268,7 @@ impl EMelderApp {
             match write_tournaments(&match tournaments {
                 Some(tournaments) => tournaments,
                 None => {
-                    eprintln!("got invalid age category");
+                    eprintln!("got invalid weight category");
                     vec![]
                 }
             }) {
@@ -923,7 +924,7 @@ impl EMelderApp {
         }
     }
 
-    fn show_about(&mut self, ui: &mut Ui) {
+    fn show_about(ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label(match translate("about.version") {
                 Ok(translation) => translation,
@@ -1187,7 +1188,7 @@ impl eframe::App for EMelderApp {
                 Mode::EditClub => self.show_edit(ui),
                 Mode::Deleting => self.show_delete(ui),
                 Mode::Config => self.show_config(ui),
-                Mode::About => self.show_about(ui)
+                Mode::About => Self::show_about(ui)
             }
             #[cfg(feature="debugging")]
             if ui.button("debug").clicked() {
@@ -1299,6 +1300,7 @@ fn main() -> Result<(), eframe::Error> {
         let translations = match get_config("lang").expect("unreachable").as_str().expect("unreachable") {
             "de" => DEFAULT_TRANSLATIONS_DE,
             "en" => DEFAULT_TRANSLATIONS_EN,
+            // other in the future supported languages would be listed here
             _ => "{}"
         };
 

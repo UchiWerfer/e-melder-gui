@@ -31,6 +31,7 @@ pub enum Belt {
 
 impl Belt {
     pub fn to_number(self) -> u8 {
+        // number used for serialisation by the official application
         match self {
             Self::Kyu9 => 1,
             Self::Kyu8 => 2,
@@ -162,6 +163,8 @@ impl Default for WeightCategory {
 
 impl WeightCategory {
     pub fn render(self) -> String {
+        // the official application renders weight categories weirdly,
+        // but we have to render them accordingly
         match self.kind {
             WeightCategoryKind::Over => String::new(),
             WeightCategoryKind::Under => format!("{}", self.limit)
@@ -204,6 +207,8 @@ impl Athlete {
     }
 
     pub fn render(&self) -> String {
+        // the official application renders athletes weirdly, but 
+        // we have to render them accordingly
         format!(include_str!("athlete-format"), self.sur_name, self.given_name, self.belt.render(), self.weight_category.render(), self.birth_year)
     }
 
@@ -264,6 +269,7 @@ impl Sender {
     }
 
     pub fn render(&self) -> String {
+        // the format here resembles toml, but is not toml
         format!(
             include_str!("sender-format"),
             self.club_name, self.given_name, self.sur_name, self.address, self.postal_code, self.town, self.private_phone, self.public_phone,
@@ -456,6 +462,7 @@ pub enum GenderCategory {
 
 impl GenderCategory {
     pub fn render(self) -> &'static str {
+        // the official application uses German abreviations
         match self {
             Self::Female => "w",
             Self::Male => "m",
@@ -482,6 +489,7 @@ impl Tournament {
     }
 
     pub fn render(&self) -> String {
+        // the formet here resembles toml, but is not toml, the date is in the usual German format
         format!(
             include_str!("tournament-format"),
             self.club.sender.render(), self.name, self.date.format("%d.%m.%Y"), self.place,

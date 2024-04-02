@@ -128,6 +128,7 @@ pub fn write_club(path: impl AsRef<Path>, club: &Club) -> io::Result<()> {
 
 #[cfg(target_os="linux")]
 pub fn get_config_dir() -> io::Result<PathBuf> {
+    // try using $XDG_CONFIG_HOME, otherwise use ~/.config
     let xdg_config = env::var("XDG_CONFIG_HOME");
     if let Ok(path) = xdg_config {
         if path.is_empty() {
@@ -146,6 +147,7 @@ pub fn get_config_dir() -> io::Result<PathBuf> {
 
 #[cfg(not(target_os="linux"))]
 pub fn get_config_dir() -> io::Result<PathBuf> {
+    // try using %APPDATA%, use %HOME% instead
     let app_data = env::var("APPDATA");
     if let Ok(path) = app_data {
         Ok(PathBuf::from(path))
