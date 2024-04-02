@@ -944,7 +944,7 @@ impl EMelderApp {
                     process::exit(1)
                 }
             });
-            if ui.link(LICENSE).clicked() {
+            if ui.link(LICENSE).on_hover_text(LICENSE_LINK).clicked() {
                 let _ = open::that_detached(LICENSE_LINK);
             }
         });
@@ -957,7 +957,7 @@ impl EMelderApp {
                     process::exit(1)
                 }
             });
-            if ui.link(CODE_LINK).clicked() {
+            if ui.link(CODE_LINK).on_hover_text(CODE_LINK).clicked() {
                 let _ = open::that_detached(CODE_LINK);
             }
         });
