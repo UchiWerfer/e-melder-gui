@@ -925,6 +925,15 @@ impl EMelderApp {
     }
 
     fn show_about(ui: &mut Ui) {
+        ui.label(match translate("about.about") {
+            Ok(translation) => translation,
+            Err(err) => {
+                eprintln!("failed to get translation: {err}");
+                process::exit(1)
+            }
+        });
+        ui.separator();
+
         ui.horizontal(|ui| {
             ui.label(match translate("about.version") {
                 Ok(translation) => translation,

@@ -85,5 +85,6 @@
     "delete.delete": "Entfernen",
     "about.version": "Version:",
     "about.license": "Lizenz:",
-    "about.source_code": "Quellcode:"
+    "about.source_code": "Quellcode:",
+    "about.about": "E-Melder GUI ist eine alternative Anwendung, um Athleten (m/w/d) für Veranstaltungen zu melden, wenn der Veranstalter dieses die E-Melder Software von DATASERVICE Software verwendet. Er wurde entwickelt, um eine bessere Benutzererfahrung als die offizielle Anwendung zu haben, und, anders als die offizielle Anwendung, FOSS zu sein."
 }
