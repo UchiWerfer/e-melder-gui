@@ -18,7 +18,7 @@ use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, 
 static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
 static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 
-static VERSION: &str = include_str!("version");
+static VERSION: &str = env!("CARGO_PKG_VERSION");
 static LICENSE: &str = "GNU GPL v2";
 static LICENSE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui/blob/master/LICENSE";
 static CODE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui";
