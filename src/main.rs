@@ -15,7 +15,9 @@ use serde_json::Map;
 use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
 use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
 
+#[cfg(not(feature = "unstable"))]
 static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
+#[cfg(not(feature = "unstable"))]
 static DEFAULT_TRANSLATIONS_EN: &str = include_str!("../lang/en.json");
 
 #[cfg(not(feature = "unstable"))]
@@ -1361,6 +1363,7 @@ fn main() -> Result<(), eframe::Error> {
         }
     }
 
+    #[cfg(not(feature = "unstable"))]
     let lang_file = match get_config_dir() {
         Ok(lang_file) => lang_file,
         Err(err) => {
@@ -1369,6 +1372,7 @@ fn main() -> Result<(), eframe::Error> {
         }
     }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").expect("unreachable").as_str().expect("unreachable")));
 
+    #[cfg(not(feature = "unstable"))]
     if !lang_file.exists() {
         match create_dir_all(lang_file.parent().expect("unreachable")) {
             Ok(()) => {},
