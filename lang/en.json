@@ -86,5 +86,10 @@
     "about.version": "Version:",
     "about.license": "License:",
     "about.source_code": "Source code:",
-    "about.about": "E-Melder-GUI is an alternative application to sign up athletes for competitions, if the organizer of an event uses the E-Melder software by DATASERVICE Software. It is designed to have a better UX than the official application and to be, different from the official application, FOSS."
+    "about.about": "E-Melder-GUI is an alternative application to sign up athletes for competitions, if the organizer of an event uses the E-Melder software by DATASERVICE Software. It is designed to have a better UX than the official application and to be, different from the official application, FOSS.",
+    "about.update_popup_title": "Checking for updates",
+    "about.check_update": "Check for updates",
+    "about.update_available": "Update available!",
+    "about.no_update_available": "No update available, or you are running the \"unstable\"-version",
+    "about.no_network": "Failed to build network-connection"
 }
