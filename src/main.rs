@@ -38,6 +38,23 @@ fn get_default_config() -> io::Result<(String, PathBuf, PathBuf)> {
     Ok((serde_json::to_string(&default_config).expect("unreachable"), athletes_file, club_file))
 }
 
+fn check_update_available(current_version: &str) -> io::Result<bool> {
+    if current_version == "unstable" {
+        return Ok(false);
+    }
+    let body = reqwest::blocking::Client::builder().user_agent("").build().map_err(|err| {
+        io::Error::other(err)
+    })?.get("https://api.github.com/repos/UchiWerfer/e-melder-gui/releases/latest").send().map_err(|err| {
+        io::Error::other(err)
+    })?.text().map_err(|err| {
+        io::Error::other(err)
+    })?;
+    let parsed: serde_json::Value = serde_json::from_str(&body)?;
+    let version_value = parsed.get("tag_name").ok_or(io::Error::other("did not get \"tag_name\" attribute in api-response"))?;
+    let version = version_value.as_str().ok_or(io::Error::other("\"tag_name\" attribute is not a string"))?;
+    Ok((String::from("v") + current_version) != version)
+}
+
 #[derive(Default, Debug)]
 enum Mode {
     #[default]
@@ -104,7 +121,9 @@ struct EMelderApp {
     registering: Registering,
     adding: Adding,
     mode: Mode,
-    config: Config
+    config: Config,
+    update_check_text: Option<String>,
+    popup_open: bool
 }
 
 impl EMelderApp {
@@ -179,7 +198,7 @@ impl EMelderApp {
                         process::exit(1)
                     }
                 }
-            }
+            }, popup_open: false, update_check_text: None
         })
     }
 
@@ -927,7 +946,7 @@ impl EMelderApp {
         }
     }
 
-    fn show_about(ui: &mut Ui) {
+    fn show_about(&mut self, ui: &mut Ui) {
         ui.label(match translate("about.about") {
             Ok(translation) => translation,
             Err(err) => {
@@ -973,6 +992,47 @@ impl EMelderApp {
                 let _ = open::that_detached(CODE_LINK);
             }
         });
+
+        if ui.button(match translate("about.check_update") {
+            Ok(translation) => translation,
+            Err(err) => {
+                eprintln!("failed to get translation: {err}");
+                process::exit(1)
+            }
+        }).clicked() {
+            let update_available = check_update_available(VERSION);
+            self.popup_open = true;
+            if let Ok(update_available) = update_available {
+                if update_available {
+                    self.update_check_text = Some(match translate("about.update_available") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            process::exit(1)
+                        }
+                    });
+                }
+                else {
+                    self.update_check_text = Some(match translate("about.no_update_available") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            process::exit(1)
+                        }
+                    });
+                }
+            }
+            else {
+                eprintln!("failed to get new version information from network: {}", update_available.unwrap_err()); // cannot panic, as it was checked above for `Ok`
+                self.update_check_text = Some(match translate("about.no_network") {
+                    Ok(translation) => translation,
+                    Err(err) => {
+                        eprintln!("failed to get translation: {err}");
+                        process::exit(1)
+                    }
+                });
+            }
+        }
     }
 
     #[allow(clippy::too_many_lines)]
@@ -1120,7 +1180,24 @@ impl EMelderApp {
 
 impl eframe::App for EMelderApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if !self.popup_open && self.update_check_text.is_some() {
+            self.update_check_text = None;
+        }
+
+        if let Some(update_check_text) = &self.update_check_text {
+            egui::Window::new(match translate("about.update_popup_title") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            }).open(&mut self.popup_open).show(ctx, |ui| {
+                ui.label(update_check_text);
+            });
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.set_enabled(self.update_check_text.is_none());
             egui::menu::bar(ui, |ui| {
                 if ui.button(match translate("application.register") {
                     Ok(translation) => translation,
@@ -1200,7 +1277,7 @@ impl eframe::App for EMelderApp {
                 Mode::EditClub => self.show_edit(ui),
                 Mode::Deleting => self.show_delete(ui),
                 Mode::Config => self.show_config(ui),
-                Mode::About => Self::show_about(ui)
+                Mode::About => self.show_about(ui)
             }
             #[cfg(feature="debugging")]
             if ui.button("debug").clicked() {
