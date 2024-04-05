@@ -235,7 +235,7 @@ impl EMelderApp {
                     process::exit(1)
                 }
             });
-            ui.add(egui_extras::DatePickerButton::new(&mut self.registering.date));
+            ui.add(egui_extras::DatePickerButton::new(&mut self.registering.date).format("%d.%m.%Y"));
         });
 
         ui.horizontal(|ui| {
