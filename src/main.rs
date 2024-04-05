@@ -1041,7 +1041,7 @@ impl EMelderApp {
     fn show_table_registering(&mut self, ui: &mut Ui) {
         let mut to_delete = None;
         let table = TableBuilder::new(ui)
-            .columns(Column::auto().at_least(100.0), 6)
+            .columns(Column::auto().at_least(100.0), 7)
             .column(Column::auto().at_least(50.0));
 
         table.header(20.0, |mut header| {
