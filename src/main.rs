@@ -1193,7 +1193,7 @@ impl eframe::App for EMelderApp {
                     eprintln!("failed to get translation: {err}");
                     process::exit(1)
                 }
-            }).open(&mut self.popup_open).show(ctx, |ui| {
+            }).collapsible(false).resizable(false).open(&mut self.popup_open).show(ctx, |ui| {
                 ui.label(update_check_text);
             });
         }
