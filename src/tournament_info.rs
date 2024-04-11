@@ -583,11 +583,11 @@ impl RegisteringAthlete {
 
 pub fn registering_athletes_to_tournaments(registering_athletes: &[RegisteringAthlete], name: &str, date: NaiveDate,
 place: &str, club: &Club) -> Option<Vec<Tournament>> {
-    let mut tournament_meta: HashMap<(String, GenderCategory), usize> = HashMap::new();
+    let mut tournament_meta: HashMap<(&str, GenderCategory), usize> = HashMap::new();
     let mut ret: Vec<Tournament> = Vec::new();
 
     for registering_athlete in registering_athletes {
-        let index_opt = tournament_meta.get(&(registering_athlete.age_category.clone(), registering_athlete.gender_category));
+        let index_opt = tournament_meta.get(&(&registering_athlete.age_category, registering_athlete.gender_category));
         if let Some(index) = index_opt {
             ret[*index].athletes.push(Athlete::new(registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(),
                 registering_athlete.birth_year, registering_athlete.belt,
@@ -601,7 +601,7 @@ place: &str, club: &Club) -> Option<Vec<Tournament>> {
                     registering_athlete.belt, WeightCategory::from_str(&registering_athlete.weight_category)?
                 )])
             );
-            tournament_meta.insert((registering_athlete.age_category.clone(), registering_athlete.gender_category), ret.len() - 1);
+            tournament_meta.insert((&registering_athlete.age_category, registering_athlete.gender_category), ret.len() - 1);
         }
     }
     Some(ret)
