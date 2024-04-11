@@ -28,16 +28,17 @@ static LICENSE: &str = "GNU GPL v2";
 static LICENSE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui/blob/master/LICENSE";
 static CODE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui";
 
-fn get_default_config() -> io::Result<(String, PathBuf, PathBuf)> {
+fn get_default_config() -> io::Result<(String, PathBuf, PathBuf, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
     let club_file = get_config_dir()?.join("e-melder").join("club.json");
+    let tournament_basedir = home::home_dir().ok_or(io::Error::other("users does not have a home-directory"))?.join("e-melder");
     let mut default_config = Map::new();
     default_config.insert(String::from("lang"), "de".into());
     default_config.insert(String::from("dark-mode"), false.into());
     default_config.insert(String::from("club-file"), club_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("athletes-file"), athletes_file.to_str().expect("unreachable").into());
-    default_config.insert(String::from("tournament-basedir"), "".into());
-    Ok((serde_json::to_string(&default_config).expect("unreachable"), athletes_file, club_file))
+    default_config.insert(String::from("tournament-basedir"), tournament_basedir.to_str().expect("unreachable").into());
+    Ok((serde_json::to_string(&default_config).expect("unreachable"), athletes_file, club_file, tournament_basedir))
 }
 
 fn check_update_available(current_version: &str) -> io::Result<bool> {
@@ -1323,7 +1324,7 @@ fn main() -> Result<(), eframe::Error> {
             }
         };
 
-        let (default_configs, athletes_file_path, club_file_path) = match get_default_config() {
+        let (default_configs, athletes_file_path, club_file_path, tournament_basedir) = match get_default_config() {
             Ok(default_configs) => default_configs,
             Err(err) => {
                 eprintln!("failed to get default-configs: {err}");
@@ -1358,6 +1359,14 @@ fn main() -> Result<(), eframe::Error> {
             Ok(()) => {},
             Err(err) => {
                 eprintln!("failed to write club-data: {err}");
+                process::exit(1)
+            }
+        }
+
+        match create_dir_all(tournament_basedir) {
+            Ok(()) => {},
+            Err(err) => {
+                eprintln!("failed to create neccessary directories for tournament-basedir: {err}");
                 process::exit(1)
             }
         }
