@@ -6,11 +6,7 @@ It is designed to have a better UX than the official application and to be, diff
 ## Installation
 1. Download the latest release for your platform (Windows or Linux) from the releases tab here on Github.
 2. Run the contained executable (for Windows the .exe-file).
-3. Do NOT forget to follow the steps described in the First Setup section.
-
-## First Setup
-1. Enter the path to the destination of the files for signing up.
-2. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the supported languages, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
+3. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the supported languages, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
 
 ## Updating
 1. Download the latest release for your platform (Windows or Linux) from the releases tab here on Github.
