@@ -71,7 +71,7 @@
     "config.dark_mode": "Dark Mode",
     "config.athletes_file": "File containing the athletes:",
     "config.club_file": "File containing the club-data",
-    "config.tournament_basedir": "Directory for the signing-up files",
+    "config.tournament_basedir": "Folder for the signing-up files",
     "config.save": "Save settings",
     "graduate.given_name": "Given name",
     "graduate.sur_name": "Surname",

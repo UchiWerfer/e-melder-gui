@@ -71,7 +71,7 @@
     "config.dark_mode": "Dark Mode",
     "config.athletes_file": "Datei mit den Athleten (m/w/d):",
     "config.club_file": "Datei mit den Vereinsdaten:",
-    "config.tournament_basedir": "Verzeichnis für die Meldedateien:",
+    "config.tournament_basedir": "Ordner für die Meldedateien:",
     "config.save": "Einstellungen speichern",
     "graduate.given_name": "Vorname",
     "graduate.sur_name": "Nachname",
