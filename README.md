@@ -8,6 +8,9 @@ It is designed to have a better UX than the official application and to be, diff
 2. Run the contained executable (for Windows the .exe-file).
 3. (Optionally) Configure the dark-mode or language (currently supported are German and English) to your liking, when you deviate from the supported languages, make sure the correct language-file is in the correct spot (view the code if unclear where that is)
 
+## Finding the registering-files
+If you have set the option being the folder for the registering-files, you will find them in the specified folder. Otherwise you will find them by going into your home-folder and searching the "e-melder" folder in there. Here you will find the files.
+
 ## Updating
 1. Download the latest release for your platform (Windows or Linux) from the releases tab here on Github.
 2. Run the contained executable (for Windows the .exe-file).
