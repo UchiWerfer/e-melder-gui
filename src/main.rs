@@ -205,6 +205,7 @@ impl EMelderApp {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     fn show_registering(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label(match translate("register.name") {
@@ -289,19 +290,40 @@ impl EMelderApp {
             let tournaments = registering_athletes_to_tournaments(
                 &self.registering.athletes, &self.registering.name, self.registering.date,
                 &self.registering.place, &self.club);
+            
             #[allow(clippy::single_match_else)]
-            match write_tournaments(&match tournaments {
+            let written = match write_tournaments(&match tournaments {
                 Some(tournaments) => tournaments,
                 None => {
                     eprintln!("got invalid weight category");
                     vec![]
                 }
             }) {
-                Ok(()) => {},
+                Ok(()) => {
+                    true
+                },
                 Err(err) => {
                     eprintln!("failed to write tournaments: {err}");
                     process::exit(1);
                 }
+            };
+
+            if written {
+                #[allow(clippy::single_match_else)]
+                let tournament_basedir = match get_config("tournament-basedir") {
+                    Ok(tournament_basedir) => match tournament_basedir.as_str() {
+                        Some(tournament_basedir) => PathBuf::from(tournament_basedir),
+                        None => {
+                            eprintln!("tournament-basedir config is not a string");
+                            process::exit(1)
+                        }
+                    },
+                    Err(err) => {
+                        eprintln!("failed to get config: {err}");
+                        process::exit(1)
+                    }
+                };
+                let _ = open::that_detached(tournament_basedir);
             }
         }
 
