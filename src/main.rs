@@ -477,9 +477,11 @@ impl EMelderApp {
             for (index, athlete) in self.athletes.iter().enumerate() {
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(athlete.get_given_name());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(athlete.get_sur_name());
                     });
                     row.col(|ui| {
@@ -808,9 +810,11 @@ impl EMelderApp {
             for (index, athlete) in self.athletes.iter().enumerate() {
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(athlete.get_given_name());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(athlete.get_sur_name());
                     });
                     row.col(|ui| {
@@ -1136,12 +1140,15 @@ impl EMelderApp {
             for (index, athlete) in self.registering.athletes.iter_mut().enumerate() {
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(athlete.get_given_name());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(athlete.get_sur_name());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
@@ -1154,6 +1161,7 @@ impl EMelderApp {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
+                        ui.style_mut().wrap = Some(false);
                         egui::ComboBox::from_id_source(index)
                         .selected_text(match translate(
                             &format!("register.table.gender_category.{}", athlete.get_gender_category().render())) {
