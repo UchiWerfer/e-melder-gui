@@ -1175,7 +1175,7 @@ impl EMelderApp {
 
     fn show_table_registering_adding(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(match translate("registering.search") {
+            ui.label(match translate("register.search") {
                 Ok(translation) => translation,
                 Err(err) => {
                     eprintln!("failed to obtain translation: {err}");
