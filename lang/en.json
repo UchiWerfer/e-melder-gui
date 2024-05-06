@@ -52,7 +52,6 @@
     "register.name": "Name of the competition:",
     "register.place": "Place of the competition:",
     "register.date": "Date of the competition:",
-    "register.add": "Add athlete to be signed up",
     "register.register": "Sign up",
     "register.search": "Search:",
     "register.table.given_name": "Given name",
