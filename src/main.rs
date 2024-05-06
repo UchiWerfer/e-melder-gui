@@ -12,8 +12,10 @@ use egui_extras::{Column, TableBuilder};
 use egui::{Ui, Visuals};
 use serde_json::Map;
 
-use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club, translate, write_athletes, write_club, write_config, write_tournaments};
-use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt, Club, GenderCategory, RegisteringAthlete, WeightCategory};
+use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club,
+    translate, write_athletes, write_club, write_config, write_tournaments};
+use tournament_info::{registering_athletes_to_tournaments, Athlete, Belt,
+    Club, GenderCategory, RegisteringAthlete, WeightCategory};
 
 #[cfg(not(feature = "unstable"))]
 static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
