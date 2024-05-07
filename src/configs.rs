@@ -187,7 +187,10 @@ pub fn translate(translation_key: &str) -> io::Result<String> {
         io::Error::new(Other, "could not read configs"))?;
     let translation = translations.get(translation_key);
     Ok(String::from(translation.map(|val| {val.as_str().
-        ok_or(io::Error::new(Other, "translation not a string"))}).unwrap_or(Ok(translation_key))?))
+        ok_or(io::Error::new(Other, "translation not a string"))}).unwrap_or_else(|| {
+            eprintln!("translation not present");
+            Ok(translation_key)
+        })?))
 }
 
 pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
