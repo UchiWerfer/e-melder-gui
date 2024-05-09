@@ -857,36 +857,78 @@ impl EMelderApp {
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("config.athletes_file") {
+            if ui.button(match translate("config.select_athletes_file") {
                 Ok(translation) => translation,
                 Err(err) => {
                     eprintln!("failed to get translation: {err}");
                     process::exit(1)
                 }
-            });
-            ui.text_edit_singleline(&mut self.config.athletes_file);
+            }).clicked() {
+                match rfd::FileDialog::new().set_can_create_directories(true)
+                    .set_title(match translate("config.athletes_file.file_picker") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            process::exit(1)
+                        }
+                    }).pick_file() {
+                        Some(athletes_file) => {
+                            self.config.athletes_file = athletes_file.display().to_string();
+                        }
+                        None => {}
+                    }
+            }
+            ui.label(&self.config.athletes_file);
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("config.club_file") {
+            if ui.button(match translate("config.select_club_file") {
                 Ok(translation) => translation,
                 Err(err) => {
                     eprintln!("failed to get translation: {err}");
                     process::exit(1)
                 }
-            });
-            ui.text_edit_singleline(&mut self.config.club_file);
+            }).clicked() {
+                match rfd::FileDialog::new().set_can_create_directories(true)
+                    .set_title(match translate("config.club_file.file_picker") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            process::exit(1)
+                        }
+                }).pick_file() {
+                    Some(club_file) => {
+                        self.config.club_file = club_file.display().to_string();
+                    }
+                    None => {}
+                }
+            }
+            ui.label(&self.config.club_file);
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("config.tournament_basedir") {
+            if ui.button(match translate("config.select_tournament_basedir") {
                 Ok(translation) => translation,
                 Err(err) => {
                     eprintln!("failed to get translation: {err}");
                     process::exit(1)
                 }
-            });
-            ui.text_edit_singleline(&mut self.config.tournament_basedir);
+            }).clicked() {
+                match rfd::FileDialog::new().set_directory(&self.config.tournament_basedir)
+                    .set_can_create_directories(true).set_title(match translate("config.tournament_basedir.file_picker") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            process::exit(1)
+                        }
+                    }).pick_folder() {
+                        Some(directory) => {
+                            self.config.tournament_basedir = directory.display().to_string()
+                        },
+                        None => {}
+                    }
+            }
+            ui.label(&self.config.tournament_basedir);
         });
 
         if ui.button(match translate("config.save") {
