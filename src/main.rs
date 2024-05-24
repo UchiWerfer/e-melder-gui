@@ -872,7 +872,7 @@ impl EMelderApp {
                             eprintln!("failed to get translation: {err}");
                             process::exit(1)
                         }
-                    }).pick_file() {
+                    }).save_file() {
                         Some(athletes_file) => {
                             self.config.athletes_file = athletes_file.display().to_string();
                         }
@@ -897,7 +897,7 @@ impl EMelderApp {
                             eprintln!("failed to get translation: {err}");
                             process::exit(1)
                         }
-                    }).pick_file() {
+                    }).save_file() {
                         Some(club_file) => {
                             self.config.club_file = club_file.display().to_string();
                         }
