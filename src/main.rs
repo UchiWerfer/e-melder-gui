@@ -394,6 +394,20 @@ impl EMelderApp {
 
     #[allow(clippy::too_many_lines)]
     fn show_graduating(&mut self, ui: &mut Ui) {
+        if self.athletes.is_empty() {
+            if ui.button(match translate("graduate.empty") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            }).clicked() {
+                self.mode = Mode::Adding;
+            }
+            return;
+        }
+
+
         let mut to_graduate = None;
         let table = TableBuilder::new(ui)
             .columns(Column::auto().at_least(100.0), 4).column(Column::auto().at_least(50.0));
@@ -727,6 +741,17 @@ impl EMelderApp {
 
     #[allow(clippy::too_many_lines)]
     fn show_delete(&mut self, ui: &mut Ui) {
+        if self.athletes.is_empty() {
+            ui.label(match translate("delete.empty") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            });
+            return;
+        }
+
         let mut to_delete = None;
         let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 4)
             .column(Column::auto().at_least(50.0));
