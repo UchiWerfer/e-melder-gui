@@ -66,7 +66,7 @@
     "register.table.gender_category.m": "Männlich",
     "register.table.delete": "Entfernen",
     "register.table.add": "Hinzufügen",
-    "config.lang": "Sprache:",
+    "config.lang": "Sprache",
     "config.dark_mode": "Dark Mode",
     "config.select_athletes_file": "Datei mit den Athleten (m/w/d):",
     "config.athletes_file.file_picker": "Wählen Sie die Datei mit den Athleten (m/w/d) aus",

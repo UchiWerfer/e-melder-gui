@@ -1,6 +1,7 @@
 mod configs;
 mod tournament_info;
 
+use std::collections::HashMap;
 use std::fs::{create_dir_all, File};
 use std::{io, process};
 use std::io::Write;
@@ -29,6 +30,15 @@ static VERSION: &str = "unstable";
 static LICENSE: &str = "GNU GPL v2";
 static LICENSE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui/blob/master/LICENSE";
 static CODE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui";
+
+lazy_static::lazy_static! {
+    static ref LANG_NAMES: HashMap<&'static str, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert("de", "Deutsch");
+        m.insert("en", "English");
+        m
+    };
+}
 
 fn get_default_config() -> io::Result<(String, PathBuf, PathBuf, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
@@ -115,7 +125,8 @@ struct Config {
     dark_mode: bool,
     athletes_file: String,
     club_file: String,
-    tournament_basedir: String
+    tournament_basedir: String,
+    langs: Vec<String>
 }
 
 #[derive(Debug)]
@@ -167,6 +178,9 @@ impl EMelderApp {
                 }
             }
         };
+        let languages = std::fs::read_dir(get_config_dir()?.join("e-melder").join("lang"))?.map(|entry| {
+            entry.expect("failed to obtain file").path().file_stem().expect("unreachable").to_str().expect("unreachable").to_owned()
+        }).collect();
 
         let visuals = if dark_mode { Visuals::dark() } else { Visuals::light() };
         
@@ -201,7 +215,8 @@ impl EMelderApp {
                         eprintln!("failed to get config tournament-basedir: {err}");
                         process::exit(1)
                     }
-                }
+                },
+                langs: languages
             }, popup_open: false, update_check_text: None
         })
     }
@@ -863,14 +878,19 @@ impl EMelderApp {
 
     fn show_config(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(match translate("config.lang") {
+            egui::ComboBox::from_label(match translate("config.lang") {
                 Ok(translation) => translation,
                 Err(err) => {
                     eprintln!("failed to get translation: {err}");
                     process::exit(1)
                 }
+            })
+            .selected_text(*LANG_NAMES.get(self.config.lang.as_str()).unwrap_or(&self.config.lang.as_str()))
+            .show_ui(ui, |ui| {
+                for lang in &self.config.langs {
+                    ui.selectable_value(&mut self.config.lang, lang.clone(), *LANG_NAMES.get(lang.as_str()).unwrap_or(&lang.as_str()));
+                }
             });
-            ui.text_edit_singleline(&mut self.config.lang);
         });
         
         ui.checkbox(&mut self.config.dark_mode, match translate("config.dark_mode") {
