@@ -119,6 +119,12 @@ impl Default for Adding {
     }
 }
 
+impl Adding {
+    fn clear(&mut self) {
+        *self = Self::default();
+    }
+}
+
 #[derive(Debug)]
 struct Config {
     lang: String,
@@ -382,6 +388,7 @@ impl EMelderApp {
                 self.adding.given_name.clone(), self.adding.sur_name.clone(),
                 self.adding.year, self.adding.belt, WeightCategory::default()
             ));
+            self.adding.clear();
             let athletes_path = match get_config("athletes-file") {
                 Ok(path) => path,
                 Err(err) => {
