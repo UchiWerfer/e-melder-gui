@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
 use egui_extras::{Column, TableBuilder};
-use egui::{Ui, Visuals};
+use egui::{TextWrapMode, Ui, Visuals};
 use serde_json::Map;
 
 use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club,
@@ -476,18 +476,18 @@ impl EMelderApp {
             for (index, athlete) in self.athletes.iter().enumerate() {
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(athlete.get_given_name());
                     });
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(athlete.get_sur_name());
                     });
                     row.col(|ui| {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
@@ -497,7 +497,7 @@ impl EMelderApp {
                         });
                     });
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         if ui.button(match translate("graduate.graduate") {
                             Ok(translation) => translation,
                             Err(err) => {
@@ -820,18 +820,18 @@ impl EMelderApp {
             for (index, athlete) in self.athletes.iter().enumerate() {
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(athlete.get_given_name());
                     });
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(athlete.get_sur_name());
                     });
                     row.col(|ui| {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
@@ -841,7 +841,7 @@ impl EMelderApp {
                         });
                     });
                     row.col(|ui| {
-                        ui.style_mut().wrap = Some(false);
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         if ui.button(match translate("delete.delete") {
                             Ok(translation) => translation,
                             Err(err) => {
@@ -883,6 +883,7 @@ impl EMelderApp {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn show_config(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             egui::ComboBox::from_label(match translate("config.lang") {
@@ -917,6 +918,7 @@ impl EMelderApp {
                 }
             });
             if ui.button(&self.config.athletes_file).clicked() {
+                #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_can_create_directories(true)
                     .set_title(match translate("config.athletes_file.file_picker") {
                         Ok(translation) => translation,
@@ -942,6 +944,7 @@ impl EMelderApp {
                 }
             });
             if ui.button(&self.config.club_file).clicked() {
+                #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_can_create_directories(true)
                     .set_title(match translate("config.club_file.file_picker") {
                         Ok(translation) => translation,
@@ -967,6 +970,7 @@ impl EMelderApp {
                 }
             });
             if ui.button(&self.config.tournament_basedir).clicked() {
+                #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_directory(&self.config.tournament_basedir)
                     .set_can_create_directories(true).set_title(match translate("config.tournament_basedir.file_picker") {
                         Ok(translation) => translation,
@@ -976,7 +980,7 @@ impl EMelderApp {
                         }
                     }).pick_folder() {
                         Some(directory) => {
-                            self.config.tournament_basedir = directory.display().to_string()
+                            self.config.tournament_basedir = directory.display().to_string();
                         },
                         None => {}
                     }
@@ -1198,15 +1202,15 @@ impl EMelderApp {
                 for (index, athlete) in self.registering.athletes.iter_mut().enumerate() {
                     body.row(18.0, |mut row| {
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             ui.label(athlete.get_given_name());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             ui.label(athlete.get_sur_name());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                                 Ok(translation) => translation,
                                 Err(err) => {
@@ -1219,7 +1223,7 @@ impl EMelderApp {
                             ui.label(athlete.get_birth_year().to_string());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             egui::ComboBox::from_id_source(index)
                             .selected_text(match translate(
                                 &format!("register.table.gender_category.{}", athlete.get_gender_category().render())) {
@@ -1248,7 +1252,7 @@ impl EMelderApp {
                             ui.text_edit_singleline(athlete.get_weight_category_mut());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             if ui.button(match translate("register.table.delete") {
                                 Ok(translation) => translation,
                                 Err(err) => {
@@ -1269,6 +1273,7 @@ impl EMelderApp {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn show_table_registering_adding(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label(match translate("register.search") {
@@ -1281,6 +1286,7 @@ impl EMelderApp {
             ui.text_edit_singleline(&mut self.registering.search);
         });
 
+        let mut athletes_shown = false;
         ui.push_id("register.table.add", |ui| {
             let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 4)
                 .column(Column::auto().at_least(50.0)).max_scroll_height(100.0);
@@ -1327,18 +1333,19 @@ impl EMelderApp {
                     if !format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()).contains(&self.registering.search) {
                         continue;
                     }
+                    athletes_shown = true;
 
                     body.row(18.0, |mut row| {
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             ui.label(athlete.get_given_name());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             ui.label(athlete.get_sur_name());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                                 Ok(translation) => translation,
                                 Err(err) => {
@@ -1351,7 +1358,7 @@ impl EMelderApp {
                             ui.label(athlete.get_birth_year().to_string());
                         });
                         row.col(|ui| {
-                            ui.style_mut().wrap = Some(false);
+                            ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             if ui.button(match translate("register.table.add") {
                                 Ok(translation) => translation,
                                 Err(err) => {
@@ -1366,6 +1373,16 @@ impl EMelderApp {
                 }
             });
         });
+
+        if !athletes_shown {
+            ui.label(match translate("register.empty") {
+                Ok(translation) => translation,
+                Err(err) => {
+                    eprintln!("failed to get translation: {err}");
+                    process::exit(1)
+                }
+            });
+        }
     }
 }
 
@@ -1388,7 +1405,9 @@ impl eframe::App for EMelderApp {
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.set_enabled(self.update_check_text.is_none());
+            if self.update_check_text.is_some() {
+                ui.disable();
+            }
             egui::menu::bar(ui, |ui| {
                 if ui.button(match translate("application.register") {
                     Ok(translation) => translation,
@@ -1617,13 +1636,9 @@ fn main() -> Result<(), eframe::Error> {
             process::exit(1)
         }
     }.as_str(), options, Box::new(|cc| {
-        Box::new(match EMelderApp::new(cc) {
-            Ok(app) => app,
-            Err(err) => {
-                eprintln!("failed to setup app: {err}");
-                process::exit(1)
-            }
+        match EMelderApp::new(cc) {
+            Ok(app) => Ok(Box::new(app)),
+            Err(err) => Err(Box::new(err))
         }
-    )
     }))
 }

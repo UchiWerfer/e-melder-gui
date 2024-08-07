@@ -54,6 +54,7 @@
     "register.date": "Date of the competition:",
     "register.register": "Sign up",
     "register.search": "Search:",
+    "register.empty": "No athletes found",
     "register.table.given_name": "Given name",
     "register.table.sur_name": "Surname",
     "register.table.belt": "Belt",
