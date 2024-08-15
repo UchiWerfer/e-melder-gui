@@ -1,6 +1,6 @@
 [package]
 name = "e-melder-gui"
-version = "2.6.0"
+version = "2.7.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,6 +12,7 @@ egui = { version = "0.28.1", features = ["accesskit"] }
 egui_extras = { version = "0.28.1", features = ["chrono"] }
 home = "0.5.9"
 lazy_static = "1.5.0"
+notify-rust = "4.11.1"
 open = "5.1.2"
 reqwest = { version = "0.12.2", features = ["blocking"] }
 rfd = "0.14.1"

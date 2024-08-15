@@ -67,6 +67,9 @@
     "register.table.gender_category.m": "Männlich",
     "register.table.delete": "Entfernen",
     "register.table.add": "Hinzufügen",
+    "register.notification.ask": "Die Meldedateien wurden erfolgreich geschrieben. Ordner mit den Meldedateien öffnen?",
+    "register.notification.yes": "Ja, Ordner öffnen.",
+    "register.notification.no": "Nein, Ordner nicht öffnen",
     "config.lang": "Sprache",
     "config.dark_mode": "Dark Mode",
     "config.select_athletes_file": "Datei mit den Athleten (m/w/d):",
@@ -94,7 +97,7 @@
     "about.about": "E-Melder GUI ist eine alternative Anwendung, um Athleten (m/w/d) für Veranstaltungen zu melden, wenn der Veranstalter dieses die E-Melder Software von DATASERVICE Software verwendet. Er wurde entwickelt, um eine bessere Benutzererfahrung als die offizielle Anwendung zu haben, und, anders als die offizielle Anwendung, FOSS zu sein.",
     "about.update_popup_title": "Auf Updates prüfen",
     "about.check_update": "Auf Updates prüfen",
-    "about.update_available": "Ein Update ist verfügbar, bitte laden Sie diese herunter und folgen Sie den Anweisungen für Updates auf der Seite.",
+    "about.update_available": "Ein Update ist verfügbar, bitte laden Sie dieses herunter und folgen Sie den Anweisungen für Updates auf der Seite.",
     "about.no_update_available": "Es ist kein Update verfügbar, oder Sie verwenden die \"unstable\"-Version",
     "about.no_network": "Es konnte keine Netzwerk-Verbindung aufgebaut werden."
 }

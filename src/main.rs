@@ -305,6 +305,49 @@ impl EMelderApp {
                         process::exit(1)
                     }
                 };
+
+                #[cfg(all(target_family="unix", not(target_os="macos")))]
+                std::thread::spawn(|| {
+                    let _ = notify_rust::Notification::new()
+                    .summary(&match translate("application.title") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            return
+                        }
+                    })
+                    .body(&match translate("register.notification.ask") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            return
+                        }
+                    })
+                    .sound_name("dialog-question")
+                    .action("yes", &match translate("register.notification.yes") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            return
+                        }
+                    })
+                    .action("no", &match translate("register.notification.no") {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            eprintln!("failed to get translation: {err}");
+                            return
+                        }
+                    })
+                    .show().map(|handle| {
+                        handle.wait_for_action(|action| {
+                            if action == "yes" {
+                                let _ = open::that_detached(tournament_basedir);
+                            }
+                        });
+                    });
+                });
+
+                #[cfg(any(not(target_family="unix"), target_os="macos"))]
                 let _ = open::that_detached(tournament_basedir);
             }
         }
