@@ -273,22 +273,16 @@ impl EMelderApp {
                 &self.registering.athletes, &self.registering.name, self.registering.date,
                 &self.registering.place, &self.club);
             
-            #[allow(clippy::single_match_else)]
-            let written = match write_tournaments(&match tournaments {
-                Some(tournaments) => tournaments,
-                None => {
-                    eprintln!("got invalid weight category");
-                    vec![]
+            let written = if let Some(tournaments) = tournaments {
+                match write_tournaments(&tournaments) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        eprintln!("failed to write tournaments: {err}");
+                        process::exit(1);
+                    }
                 }
-            }) {
-                Ok(()) => {
-                    true
-                },
-                Err(err) => {
-                    eprintln!("failed to write tournaments: {err}");
-                    process::exit(1);
-                }
-            };
+                true
+            } else { false };
 
             if written {
                 #[allow(clippy::single_match_else)]
