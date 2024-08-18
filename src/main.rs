@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod configs;
 mod tournament_info;
 
@@ -11,6 +13,10 @@ use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
 use egui_extras::{Column, TableBuilder};
 use egui::{TextWrapMode, Ui, Visuals};
+use log4rs::append::console::ConsoleAppender;
+use log4rs::append::file::FileAppender;
+use log4rs::config::{Appender, Logger, Root};
+use log4rs::encode::pattern::PatternEncoder;
 use serde_json::Map;
 
 use configs::{get_config, get_config_dir, get_config_file, read_athletes, read_club,
@@ -40,7 +46,7 @@ lazy_static::lazy_static! {
     };
 }
 
-fn get_default_config() -> io::Result<(String, PathBuf, PathBuf, PathBuf)> {
+fn get_default_config() -> io::Result<(String, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
     let club_file = get_config_dir()?.join("e-melder").join("club.json");
     let tournament_basedir = home::home_dir().ok_or(io::Error::other("users does not have a home-directory"))?.join("e-melder");
@@ -50,7 +56,7 @@ fn get_default_config() -> io::Result<(String, PathBuf, PathBuf, PathBuf)> {
     default_config.insert(String::from("club-file"), club_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("athletes-file"), athletes_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("tournament-basedir"), tournament_basedir.to_str().expect("unreachable").into());
-    Ok((serde_json::to_string(&default_config).expect("unreachable"), athletes_file, club_file, tournament_basedir))
+    Ok((serde_json::to_string(&default_config).expect("unreachable"), tournament_basedir))
 }
 
 fn check_update_available(current_version: &str) -> io::Result<bool> {
@@ -129,8 +135,8 @@ impl Adding {
 struct Config {
     lang: String,
     dark_mode: bool,
-    athletes_file: String,
-    club_file: String,
+    athletes_file: PathBuf,
+    club_file: PathBuf,
     tournament_basedir: String,
     langs: Vec<String>
 }
@@ -152,13 +158,13 @@ impl EMelderApp {
         let athlete_file_value = get_config("athletes-file")?;
         let club_file_value = get_config("club-file")?;
         let dark_mode_value = get_config("dark-mode")?;
-        let athlete_file = PathBuf::from(athlete_file_value.as_str()
+        let athletes_file = PathBuf::from(athlete_file_value.as_str()
             .ok_or(io::Error::new(io::ErrorKind::Other, "athletes-file not a string"))?);
         let club_file = PathBuf::from(club_file_value.as_str()
             .ok_or(io::Error::new(io::ErrorKind::Other, "club-file not a string"))?);
         let dark_mode = dark_mode_value.as_bool().ok_or(io::Error::new(
             io::ErrorKind::Other, "dark-mode not a bool"))?;
-        let athletes = match read_athletes(athlete_file) {
+        let athletes = match read_athletes(&athletes_file) {
             Ok(athletes) => athletes,
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
@@ -166,12 +172,12 @@ impl EMelderApp {
                     Vec::new()
                 }
                 else {
-                    eprintln!("failed to read athletes: {err}");
-                    process::exit(1)
+                    log::warn!("failed to read athletes, due to {err}");
+                    Vec::new()
                 }
             }
         };
-        let club = match read_club(club_file) {
+        let club = match read_club(&club_file) {
             Ok(club) => club,
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
@@ -179,13 +185,16 @@ impl EMelderApp {
                     Club::default()
                 }
                 else {
-                    eprintln!("failed to read club: {err}");
-                    process::exit(1)
+                    log::warn!("failed to read club, due to {err}");
+                    Club::default()
                 }
             }
         };
         let languages = std::fs::read_dir(get_config_dir()?.join("e-melder").join("lang"))?.map(|entry| {
-            entry.expect("failed to obtain file").path().file_stem().expect("unreachable").to_str().expect("unreachable").to_owned()
+            entry.unwrap_or_else(|err| {
+                log::error!("failed to read config-directory/e-melder/lang, due to {err}");
+                crash();
+            }).path().file_stem().expect("unreachable").to_str().expect("unreachable").to_owned()
         }).collect();
 
         let visuals = if dark_mode { Visuals::dark() } else { Visuals::light() };
@@ -199,27 +208,27 @@ impl EMelderApp {
                     Ok(value) => match value.as_str() {
                         Some(lang) => lang,
                         None => {
-                            eprintln!("lang not a string");
-                            process::exit(1)
+                            log::error!("lang-config is not a string");
+                            crash();
                         }
                     }.to_owned(),
                     Err(err) => {
-                        eprintln!("failed to get config lang: {err}");
-                        process::exit(1)
+                        log::error!("could not get lang-config, due to {err}");
+                        crash();
                     }
-                }, dark_mode, athletes_file: athlete_file_value.as_str().expect("unreachable").to_owned(),
-                club_file: club_file_value.as_str().expect("unreachable").to_owned(),
+                }, dark_mode, athletes_file,
+                club_file,
                 tournament_basedir: match get_config("tournament-basedir") {
                     Ok(value) => match value.as_str() {
                         Some(tournament_basedir) => tournament_basedir,
                         None => {
-                            eprintln!("tournament-basedir not a string");
-                            process::exit(1)
+                            log::error!("tournament-basedir-config is not a string");
+                            crash();
                         }
                     }.to_owned(),
                     Err (err) => {
-                        eprintln!("failed to get config tournament-basedir: {err}");
-                        process::exit(1)
+                        log::error!("could net get tournament-basedir-config, due to {err}");
+                        crash();
                     }
                 },
                 langs: languages
@@ -233,8 +242,8 @@ impl EMelderApp {
             ui.label(match translate("register.name") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("register.name")
                 }
             });
             ui.text_edit_singleline(&mut self.registering.name);
@@ -244,8 +253,8 @@ impl EMelderApp {
             ui.label(match translate("register.place") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("register.place")
                 }
             });
             ui.text_edit_singleline(&mut self.registering.place);
@@ -255,8 +264,8 @@ impl EMelderApp {
             ui.label(match translate("register.date") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("register.date")
                 }
             });
             ui.add(egui_extras::DatePickerButton::new(&mut self.registering.date).format("%d.%m.%Y"));
@@ -265,8 +274,8 @@ impl EMelderApp {
         if ui.button(match translate("register.register") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("register.register")
             }
         }).clicked() {
             let tournaments = registering_athletes_to_tournaments(
@@ -275,13 +284,14 @@ impl EMelderApp {
             
             let written = if let Some(tournaments) = tournaments {
                 match write_tournaments(&tournaments) {
-                    Ok(()) => {}
+                    Ok(()) => {
+                        true
+                    }
                     Err(err) => {
-                        eprintln!("failed to write tournaments: {err}");
-                        process::exit(1);
+                        log::warn!("failed to write tournaments, due to {err}");
+                        false
                     }
                 }
-                true
             } else { false };
 
             if written {
@@ -290,13 +300,13 @@ impl EMelderApp {
                     Ok(tournament_basedir) => match tournament_basedir.as_str() {
                         Some(tournament_basedir) => PathBuf::from(tournament_basedir),
                         None => {
-                            eprintln!("tournament-basedir config is not a string");
-                            process::exit(1)
+                            log::error!("tournament-basedir-config is not a string");
+                            crash()
                         }
                     },
                     Err(err) => {
-                        eprintln!("failed to get config: {err}");
-                        process::exit(1)
+                        log::error!("failed to get tournament-basedir-config, due to {err}");
+                        crash()
                     }
                 };
 
@@ -306,30 +316,30 @@ impl EMelderApp {
                     .summary(&match translate("application.title") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            return
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("application.title")
                         }
                     })
                     .body(&match translate("register.notification.ask") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            return
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.applicatoin.ask")
                         }
                     })
                     .sound_name("dialog-question")
                     .action("yes", &match translate("register.notification.yes") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            return
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.notification.yes")
                         }
                     })
                     .action("no", &match translate("register.notification.no") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            return
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.notification.no")
                         }
                     })
                     .show().map(|handle| {
@@ -360,8 +370,8 @@ impl EMelderApp {
             ui.label(match translate("add.given_name") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("add.given_name")
                 }
             });
             ui.text_edit_singleline(&mut self.adding.given_name);
@@ -370,8 +380,8 @@ impl EMelderApp {
             ui.label(match translate("add.sur_name") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("add.sur_name")
                 }
             });
             ui.text_edit_singleline(&mut self.adding.sur_name);
@@ -380,14 +390,14 @@ impl EMelderApp {
             egui::ComboBox::from_label(match translate("add.belt") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("add.belt")
                 }
             }).selected_text(match translate(&format!("add.belt.{}", self.adding.belt.serialise())) {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    format!("add.belt.{}", self.adding.belt.serialise())
                 }
             }).show_ui(ui, |ui| {
                 for belt in [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, Belt::Kyu5, Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1,
@@ -396,8 +406,8 @@ impl EMelderApp {
                         &format!("add.belt.{}", belt.serialise())) {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            format!("add.belt.{}", belt.serialise())
                         }
                     });
                 }
@@ -407,8 +417,8 @@ impl EMelderApp {
             ui.label(match translate("add.year") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("add.year")
                 }
             });
             ui.add(egui::Slider::new(&mut self.adding.year, 1900..=2100));
@@ -417,8 +427,8 @@ impl EMelderApp {
         if ui.button(match translate("add.commit") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("add.commit")
             }
         }).clicked() {
             self.athletes.push(Athlete::new(
@@ -429,23 +439,23 @@ impl EMelderApp {
             let athletes_path = match get_config("athletes-file") {
                 Ok(path) => path,
                 Err(err) => {
-                    eprintln!("failed to get config: {err}");
-                    process::exit(1)
+                    log::error!("failed to get athletes-file-config, due to {err}");
+                    crash();
                 }
             };
             #[allow(clippy::single_match_else)]
             let path = PathBuf::from(match athletes_path.as_str() {
                 Some(path) => path,
                 None => {
-                    eprintln!("athletes-file not a string");
-                    process::exit(1)
+                    log::error!("athletes-file-config is not a string");
+                    crash();
                 }
             });
             match write_athletes(path, &self.athletes) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to write athletes: {err}");
-                    process::exit(1)
+                    log::error!("failed to write athletes, due to {err}");
+                    crash();
                 }
             }
         }
@@ -457,8 +467,8 @@ impl EMelderApp {
             if ui.button(match translate("graduate.empty") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("graduate.empty")
                 }
             }).clicked() {
                 self.mode = Mode::Adding;
@@ -476,8 +486,8 @@ impl EMelderApp {
                 ui.strong(match translate("graduate.given_name") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("graduate.given_name")
                     }
                 });
             });
@@ -485,8 +495,8 @@ impl EMelderApp {
                 ui.strong(match translate("graduate.sur_name") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("graduate.sur_name")
                     }
                 });
             });
@@ -494,8 +504,8 @@ impl EMelderApp {
                 ui.strong(match translate("graduate.year") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("graduate.year")
                     }
                 });
             });
@@ -503,8 +513,8 @@ impl EMelderApp {
                 ui.strong(match translate("graduate.belt") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("graduate.belt")
                     }
                 });
             });
@@ -528,8 +538,8 @@ impl EMelderApp {
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
-                                eprintln!("failed to get translation: {err}");
-                                process::exit(1)
+                                log::warn!("failed to get translation, due to {err}");
+                                format!("add.belt.{}", athlete.get_belt().serialise())
                             }
                         });
                     });
@@ -538,8 +548,8 @@ impl EMelderApp {
                         if ui.button(match translate("graduate.graduate") {
                             Ok(translation) => translation,
                             Err(err) => {
-                                eprintln!("failed to get translation: {err}");
-                                process::exit(1)
+                                log::warn!("failed to get translation, due to {err}");
+                                String::from("graduate.graduate")
                             }
                         }).clicked() {
                             to_graduate = Some(index);
@@ -555,23 +565,23 @@ impl EMelderApp {
             let athletes_path = match get_config("athletes-file") {
                 Ok(path) => path,
                 Err(err) => {
-                    eprintln!("failed to get config: {err}");
-                    process::exit(1)
+                    log::error!("failed to get athletes-file-config, due to {err}");
+                    crash();
                 }
             };
             #[allow(clippy::single_match_else)]
             let path = PathBuf::from(match athletes_path.as_str() {
                 Some(path) => path,
                 None => {
-                    eprintln!("athletes-file not a string");
-                    process::exit(1)
+                    log::error!("athletes-file not a string");
+                    crash();
                 }
             });
             match write_athletes(path, &self.athletes) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to write athletes: {err}");
-                    process::exit(1);
+                    log::error!("failed to write athletes, due to {err}");
+                    crash();
                 }
             }
         }
@@ -583,8 +593,8 @@ impl EMelderApp {
             ui.label(match translate("edit.club_name") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.club_name")
                 }
             });
             ui.text_edit_singleline(self.club.get_name_mut());
@@ -594,8 +604,8 @@ impl EMelderApp {
             ui.label(match translate("edit.given_name") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.given_name")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_given_name_mut());
@@ -605,8 +615,8 @@ impl EMelderApp {
             ui.label(match translate("edit.sur_name") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.sur_name")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_sur_name_mut());
@@ -616,8 +626,8 @@ impl EMelderApp {
             ui.label(match translate("edit.address") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.address")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_address_mut());
@@ -627,8 +637,8 @@ impl EMelderApp {
             ui.label(match translate("edit.postal_code") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.postal_code")
                 }
             });
             ui.add(egui::DragValue::new(self.club.get_sender_mut().get_postal_code_mut()));
@@ -638,8 +648,8 @@ impl EMelderApp {
             ui.label(match translate("edit.town") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.town")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_town_mut());
@@ -649,8 +659,8 @@ impl EMelderApp {
             ui.label(match translate("edit.private") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.private")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_private_phone_mut());
@@ -660,8 +670,8 @@ impl EMelderApp {
             ui.label(match translate("edit.public") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.public")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_public_phone_mut());
@@ -671,8 +681,8 @@ impl EMelderApp {
             ui.label(match translate("edit.fax") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.fax")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_fax_mut());
@@ -682,8 +692,8 @@ impl EMelderApp {
             ui.label(match translate("edit.mobile") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get transation, due to {err}");
+                    String::from("edit.mobile")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_mobile_mut());
@@ -693,8 +703,8 @@ impl EMelderApp {
             ui.label(match translate("edit.mail") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.mail")
                 }
             });
             ui.text_edit_singleline(self.club.get_sender_mut().get_mail_mut());
@@ -704,8 +714,8 @@ impl EMelderApp {
             ui.label(match translate("edit.club_number") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.club_number")
                 }
             });
             ui.add(egui::DragValue::new(self.club.get_number_mut()));
@@ -715,8 +725,8 @@ impl EMelderApp {
             ui.label(match translate("edit.county") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.county")
                 }
             });
             ui.text_edit_singleline(self.club.get_county_mut());
@@ -726,8 +736,8 @@ impl EMelderApp {
             ui.label(match translate("edit.region") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.region")
                 }
             });
             ui.text_edit_singleline(self.club.get_region_mut());
@@ -737,8 +747,8 @@ impl EMelderApp {
             ui.label(match translate("edit.state") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.state")
                 }
             });
             ui.text_edit_singleline(self.club.get_state_mut());
@@ -748,8 +758,8 @@ impl EMelderApp {
             ui.label(match translate("edit.group") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.group")
                 }
             });
             ui.text_edit_singleline(self.club.get_group_mut());
@@ -759,8 +769,8 @@ impl EMelderApp {
             ui.label(match translate("edit.nation") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("edit.nation")
                 }
             });
             ui.text_edit_singleline(self.club.get_nation_mut());
@@ -769,8 +779,8 @@ impl EMelderApp {
         if ui.button(match translate("edit.save") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("edit.save")
             }
         }).clicked() {
             let path_value = match get_config("club-file") {
@@ -784,15 +794,15 @@ impl EMelderApp {
             let path = PathBuf::from(match path_value.as_str() {
                 Some(value) => value,
                 None => {
-                    eprintln!("club-file not a string");
-                    process::exit(1)
+                    log::error!("club-file-config is not a string");
+                    crash();
                 }
             });
             match write_club(path, &self.club) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to write club: {err}");
-                    process::exit(1);
+                    log::error!("failed to write club, due to {err}");
+                    crash();
                 }
             }
         }
@@ -804,8 +814,8 @@ impl EMelderApp {
             ui.label(match translate("delete.empty") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("delete.empty")
                 }
             });
             return;
@@ -820,8 +830,8 @@ impl EMelderApp {
                 ui.strong(match translate("delete.given_name") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("delete.given_name")
                     }
                 });
             });
@@ -829,8 +839,8 @@ impl EMelderApp {
                 ui.strong(match translate("delete.sur_name") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("delete.sur_name")
                     }
                 });
             });
@@ -838,8 +848,8 @@ impl EMelderApp {
                 ui.strong(match translate("delete.year") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("delete.year")
                     }
                 });
             });
@@ -847,8 +857,8 @@ impl EMelderApp {
                 ui.strong(match translate("delete.belt") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("delete.belt")
                     }
                 });
             });
@@ -872,8 +882,8 @@ impl EMelderApp {
                         ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                             Ok(translation) => translation,
                             Err(err) => {
-                                eprintln!("failed to get translation: {err}");
-                                process::exit(1)
+                                log::warn!("failed to get translation, due to {err}");
+                                format!("add.belt.{}", athlete.get_belt().serialise())
                             }
                         });
                     });
@@ -882,8 +892,8 @@ impl EMelderApp {
                         if ui.button(match translate("delete.delete") {
                             Ok(translation) => translation,
                             Err(err) => {
-                                eprintln!("failed to get translation: {err}");
-                                process::exit(1)
+                                log::warn!("failed to get translation, due to {err}");
+                                String::from("delete.delete")
                             }
                         }).clicked() {
                             to_delete = Some(index);
@@ -898,23 +908,23 @@ impl EMelderApp {
             let athletes_path = match get_config("athletes-file") {
                 Ok(path) => path,
                 Err(err) => {
-                    eprintln!("failed to get config: {err}");
-                    process::exit(1)
+                    log::error!("failed to get athletes-file-config, due to {err}");
+                    crash();
                 }
             };
             #[allow(clippy::single_match_else)]
             let path = PathBuf::from(match athletes_path.as_str() {
                 Some(path) => path,
                 None => {
-                    eprintln!("athletes-file not a string");
-                    process::exit(1)
+                    log::error!("athletes-file-config is not a string");
+                    crash();
                 }
             });
             match write_athletes(path, &self.athletes) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to write athletes: {err}");
-                    process::exit(1);
+                    log::error!("failed to write athletes, due to {err}");
+                    crash();
                 }
             }
         }
@@ -926,8 +936,8 @@ impl EMelderApp {
             egui::ComboBox::from_label(match translate("config.lang") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("config.lang")
                 }
             })
             .selected_text(*LANG_NAMES.get(self.config.lang.as_str()).unwrap_or(&self.config.lang.as_str()))
@@ -941,8 +951,8 @@ impl EMelderApp {
         ui.checkbox(&mut self.config.dark_mode, match translate("config.dark_mode") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("config.dark_mode")
             }
         });
 
@@ -950,22 +960,22 @@ impl EMelderApp {
             ui.label(match translate("config.select_athletes_file") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("config.select_athletes_file")
                 }
             });
-            if ui.button(&self.config.athletes_file).clicked() {
+            if ui.button(self.config.athletes_file.display().to_string()).clicked() {
                 #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_can_create_directories(true)
                     .set_title(match translate("config.athletes_file.file_picker") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("config.athletes_file.file_picker")
                         }
                     }).save_file() {
                         Some(athletes_file) => {
-                            self.config.athletes_file = athletes_file.display().to_string();
+                            self.config.athletes_file = athletes_file;
                         }
                         None => {}
                     }
@@ -976,22 +986,22 @@ impl EMelderApp {
             ui.label(match translate("config.select_club_file") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("config.select_club_file")
                 }
             });
-            if ui.button(&self.config.club_file).clicked() {
+            if ui.button(self.config.club_file.display().to_string()).clicked() {
                 #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_can_create_directories(true)
                     .set_title(match translate("config.club_file.file_picker") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation: {err}");
+                            String::from("config.club_file.file_picker")
                         }
                     }).save_file() {
                         Some(club_file) => {
-                            self.config.club_file = club_file.display().to_string();
+                            self.config.club_file = club_file;
                         }
                         None => {}
                     }
@@ -1002,8 +1012,8 @@ impl EMelderApp {
             ui.label(match translate("config.select_tournament_basedir") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation: {err}");
+                    String::from("config.select_tournament_basedir")
                 }
             });
             if ui.button(&self.config.tournament_basedir).clicked() {
@@ -1012,8 +1022,8 @@ impl EMelderApp {
                     .set_can_create_directories(true).set_title(match translate("config.tournament_basedir.file_picker") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation: {err}");
+                            String::from("conig.tournament_basedir.file_picker")
                         }
                     }).pick_folder() {
                         Some(directory) => {
@@ -1027,47 +1037,47 @@ impl EMelderApp {
         if ui.button(match translate("config.save") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("config.save")
             }
         }).clicked() {
             match write_config("lang", self.config.lang.clone().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to set config: {err}");
-                    process::exit(1);
+                    log::error!("failed to set config, due to {err}");
+                    crash();
                 }
             }
             
             match write_config("dark-mode", self.config.dark_mode.into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to set config: {err}");
-                    process::exit(1);
+                    log::error!("failed to set config, due to {err}");
+                    crash();
                 }
             }
 
-            match write_config("athletes-file", self.config.athletes_file.clone().into()) {
+            match write_config("athletes-file", self.config.athletes_file.display().to_string().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to set config: {err}");
-                    process::exit(1);
+                    log::error!("failed to set config, due to {err}");
+                    crash();
                 }
             }
 
-            match write_config("club-file", self.config.club_file.clone().into()) {
+            match write_config("club-file", self.config.club_file.display().to_string().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to set config: {err}");
-                    process::exit(1);
+                    log::error!("failed to set config, due to {err}");
+                    crash();
                 }
             }
 
             match write_config("tournament-basedir", self.config.tournament_basedir.clone().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    eprintln!("failed to set config: {err}");
-                    process::exit(1);
+                    log::error!("failed to set config, due to {err}");
+                    crash();
                 }
             }
         }
@@ -1077,8 +1087,8 @@ impl EMelderApp {
         ui.label(match translate("about.about") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("about.about")
             }
         });
         ui.separator();
@@ -1087,8 +1097,8 @@ impl EMelderApp {
             ui.label(match translate("about.version") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("about.version")
                 }
             });
             ui.label(VERSION);
@@ -1098,8 +1108,8 @@ impl EMelderApp {
             ui.label(match translate("about.license") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("about.license")
                 }
             });
             if ui.link(LICENSE).on_hover_text(LICENSE_LINK).clicked() {
@@ -1111,8 +1121,8 @@ impl EMelderApp {
             ui.label(match translate("about.source_code") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("about.source_code")
                 }
             });
             if ui.link(CODE_LINK).on_hover_text(CODE_LINK).clicked() {
@@ -1123,8 +1133,8 @@ impl EMelderApp {
         if ui.button(match translate("about.check_update") {
             Ok(translation) => translation,
             Err(err) => {
-                eprintln!("failed to get translation: {err}");
-                process::exit(1)
+                log::warn!("failed to get translation, due to {err}");
+                String::from("about.check_update")
             }
         }).clicked() {
             let update_available = check_update_available(VERSION);
@@ -1134,8 +1144,8 @@ impl EMelderApp {
                     self.update_check_text = Some(match translate("about.update_available") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("about.update_available")
                         }
                     });
                 }
@@ -1143,19 +1153,19 @@ impl EMelderApp {
                     self.update_check_text = Some(match translate("about.no_update_available") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("about.no_update_available")
                         }
                     });
                 }
             }
             else {
-                eprintln!("failed to get new version information from network: {}", update_available.unwrap_err()); // cannot panic, as it was checked above for `Ok`
+                log::warn!("failed to get new version information from network: {}", update_available.unwrap_err()); // cannot panic, as it was checked above for `Ok`
                 self.update_check_text = Some(match translate("about.no_network") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("about.no_network")
                     }
                 });
             }
@@ -1175,8 +1185,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.given_name") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.given_name")
                         }
                     });
                 });
@@ -1184,8 +1194,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.sur_name") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.sur_name")
                         }
                     });
                 });
@@ -1193,8 +1203,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.belt") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.belt")
                         }
                     });
                 });
@@ -1202,8 +1212,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.year") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.year")
                         }
                     });
                 });
@@ -1211,8 +1221,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.gender_category") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.gender_category")
                         }
                     });
                 });
@@ -1220,8 +1230,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.age_category") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.age_category")
                         }
                     });
                 });
@@ -1229,8 +1239,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.weight_category") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to get translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.weight_category")
                         }
                     });
                 });
@@ -1251,8 +1261,8 @@ impl EMelderApp {
                             ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                                 Ok(translation) => translation,
                                 Err(err) => {
-                                    eprintln!("failed to get translation: {err}");
-                                    process::exit(1)
+                                    log::warn!("failed to get translation, due to {err}");
+                                    format!("add.belt.{}", athlete.get_belt().serialise())
                                 }
                             });
                         });
@@ -1266,8 +1276,8 @@ impl EMelderApp {
                                 &format!("register.table.gender_category.{}", athlete.get_gender_category().render())) {
                                     Ok(translation) => translation,
                                     Err(err) => {
-                                        eprintln!("failed to get translation: {err}");
-                                        process::exit(1)
+                                        log::warn!("failed to get translation, due to {err}");
+                                        format!("register.table.gender_category.{}", athlete.get_gender_category().render())
                                     }
                                 }).show_ui(ui, |ui| {
                                     for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
@@ -1275,8 +1285,8 @@ impl EMelderApp {
                                             match translate(&format!("register.table.gender_category.{}", gender_category.render())) {
                                                 Ok(translation) => translation,
                                                 Err(err) => {
-                                                    eprintln!("failed to get translation: {err}");
-                                                    process::exit(1)
+                                                    log::warn!("failed to get translation: {err}");
+                                                    format!("register.table.gender_category.{}", gender_category.render())
                                                 }
                                             });
                                     }
@@ -1293,8 +1303,8 @@ impl EMelderApp {
                             if ui.button(match translate("register.table.delete") {
                                 Ok(translation) => translation,
                                 Err(err) => {
-                                    eprintln!("failed to get translation: {err}");
-                                    process::exit(1)
+                                    log::warn!("failed to get translation, due to {err}");
+                                    String::from("register.table.delete")
                                 }
                             }).clicked() {
                                 to_delete = Some(index);
@@ -1316,8 +1326,8 @@ impl EMelderApp {
             ui.label(match translate("register.search") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to obtain translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to obtain translation, due to {err}");
+                    String::from("register.search")
                 }
             });
             ui.text_edit_singleline(&mut self.registering.search);
@@ -1333,8 +1343,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.given_name") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to obtain translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.given_name")
                         }
                     });
                 });
@@ -1342,8 +1352,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.sur_name") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to obtain translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.sur_name")
                         }
                     });
                 });
@@ -1351,8 +1361,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.belt") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to obtain translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.belt")
                         }
                     });
                 });
@@ -1360,8 +1370,8 @@ impl EMelderApp {
                     ui.strong(match translate("register.table.year") {
                         Ok(translation) => translation,
                         Err(err) => {
-                            eprintln!("failed to obtain translation: {err}");
-                            process::exit(1)
+                            log::warn!("failed to get translation, due to {err}");
+                            String::from("register.table.year")
                         }
                     });
                 });
@@ -1386,8 +1396,8 @@ impl EMelderApp {
                             ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
                                 Ok(translation) => translation,
                                 Err(err) => {
-                                    eprintln!("failed to obtain translation: {err}");
-                                    process::exit(1)
+                                    log::warn!("failed to get translation, due to {err}");
+                                    format!("add.belt.{}", athlete.get_belt().serialise())
                                 }
                             });
                         });
@@ -1399,8 +1409,8 @@ impl EMelderApp {
                             if ui.button(match translate("register.table.add") {
                                 Ok(translation) => translation,
                                 Err(err) => {
-                                    eprintln!("failed to obtain translation: {err}");
-                                    process::exit(1)
+                                    log::warn!("failed to get translation, due to {err}");
+                                    String::from("register.table.add")
                                 }
                             }).clicked() {
                                 self.registering.athletes.push(RegisteringAthlete::from_athlete(athlete));
@@ -1415,8 +1425,8 @@ impl EMelderApp {
             ui.label(match translate("register.empty") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("register.empty")
                 }
             });
         }
@@ -1433,8 +1443,8 @@ impl eframe::App for EMelderApp {
             egui::Window::new(match translate("about.update_popup_title") {
                 Ok(translation) => translation,
                 Err(err) => {
-                    eprintln!("failed to get translation: {err}");
-                    process::exit(1)
+                    log::warn!("failed to get translation, due to {err}");
+                    String::from("about.update_popup_title")
                 }
             }).collapsible(false).resizable(false).open(&mut self.popup_open).show(ctx, |ui| {
                 ui.label(update_check_text);
@@ -1449,8 +1459,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.register") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.register")
                     }
                 }).clicked() {
                     self.mode = Mode::Registering;
@@ -1459,8 +1469,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.add") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.add")
                     }
                 }).clicked() {
                     self.mode = Mode::Adding;
@@ -1469,8 +1479,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.graduate") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.graduate")
                     }
                 }).clicked() {
                     self.mode = Mode::Graduating;
@@ -1479,8 +1489,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.delete") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.delete")
                     }
                 }).clicked() {
                     self.mode = Mode::Deleting;
@@ -1489,8 +1499,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.edit") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.edit")
                     }
                 }).clicked() {
                     self.mode = Mode::EditClub;
@@ -1499,8 +1509,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.config") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.config")
                     }
                 }).clicked() {
                     self.mode = Mode::Config;
@@ -1509,8 +1519,8 @@ impl eframe::App for EMelderApp {
                 if ui.button(match translate("application.about") {
                     Ok(translation) => translation,
                     Err(err) => {
-                        eprintln!("failed to get translation: {err}");
-                        process::exit(1)
+                        log::warn!("failed to get translation, due to {err}");
+                        String::from("application.about")
                     }
                 }).clicked() {
                     self.mode = Mode::About;
@@ -1534,84 +1544,88 @@ impl eframe::App for EMelderApp {
     }
 }
 
+fn crash() -> ! {
+    let _ = notify_rust::Notification::new()
+    .summary("E-Melder")
+    .body(&format!("An unrecoverable error occurred, please look into the logs to see what happened.\n{}{}",
+    "If you think this is a bug, please file a bug report at ", CODE_LINK))
+    .sound_name("dialog-error")
+    .show();
+    panic!()
+}
+
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), eframe::Error> {
+    let stdout_logger = ConsoleAppender::builder().build();
+    let file_logger = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{level} from {module} on {date(%a, %Y-%m-%d at %H:%M:%S%z)}: {message}\n")))
+        .build(get_config_dir().unwrap_or_else(|_err| {
+            crash()
+        }).join("e-melder/e-melder.log")).unwrap_or_else(
+            |_err| {
+                crash()
+            }
+        );
+    let config = log4rs::Config::builder()
+        .appender(Appender::builder().build("stdout", Box::new(stdout_logger)))
+        .appender(Appender::builder().build("file", Box::new(file_logger)))
+        .logger(Logger::builder()
+            .appenders(["stdout", "file"])
+            .build("e-melder", log::LevelFilter::Info))
+        .build(Root::builder().appenders(["stdout", "file"]).build(log::LevelFilter::Info)).unwrap_or_else(|_err| {
+            crash()
+        });
+    log4rs::init_config(config).unwrap_or_else(|_err| {
+        crash()
+    });
+    log::info!("New run of the app");
+
     let config_file = match get_config_file() {
         Ok(config_file) => config_file,
         Err(err) => {
-            eprintln!("failed to get config-file: {err}");
-            process::exit(1)
+            log::error!("failed to get config-file, due to {err}");
+            crash();
         }
     };
 
     if !config_file.exists() {
-        #[allow(clippy::single_match_else)]
-        match create_dir_all(match config_file.parent() {
-            Some(config_file_parent) => config_file_parent,
-            None => {
-                eprintln!("config-file does not have a parent-directory");
-                process::exit(1)
-            }
-        }) {
-            Ok(()) => {},
-            Err(err) => {
-                eprintln!("failed to create neccessary directories for config-file: {err}");
-                process::exit(1)
+        if let Some(config_file_parent) = config_file.parent() {
+            match create_dir_all(config_file_parent) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::error!("failed to create neccessary directories for config-file, due to {err}");
+                    crash();
+                }
             }
         }
 
         let mut config_file = match File::options().write(true).create_new(true).open(config_file) {
             Ok(config_file) => config_file,
             Err(err) => {
-                eprintln!("failed to create config file: {err}");
-                process::exit(1)
+                log::error!("failed to create config-file, due to {err}");
+                crash();
             }
         };
 
-        let (default_configs, athletes_file_path, club_file_path, tournament_basedir) = match get_default_config() {
+        let (default_configs, tournament_basedir) = match get_default_config() {
             Ok(default_configs) => default_configs,
             Err(err) => {
-                eprintln!("failed to get default-configs: {err}");
-                process::exit(1)
+                log::error!("failed to create default-configs, due to {err}");
+                crash();
             }
         };
 
         match config_file.write_all(default_configs.as_bytes()) {
             Ok(()) => {},
             Err(err) => {
-                eprintln!("failed to write default-configs: {err}");
-            }
-        }
-
-        let mut athletes_file = match File::options().write(true).create(true).truncate(true).open(athletes_file_path) {
-            Ok(athletes_file) => athletes_file,
-            Err(err) => {
-                eprintln!("failed to open athletes-file: {err}");
-                process::exit(1)
-            }
-        };
-        
-        match athletes_file.write_all(b"[]") {
-            Ok(()) => {},
-            Err(err) => {
-                eprintln!("failed to write athletes: {err}");
-                process::exit(1);
-            }
-        }
-
-        match write_club(club_file_path, &Club::default()) {
-            Ok(()) => {},
-            Err(err) => {
-                eprintln!("failed to write club-data: {err}");
-                process::exit(1)
+                log::warn!("failed to write default-configs, due to {err}");
             }
         }
 
         match create_dir_all(tournament_basedir) {
             Ok(()) => {},
             Err(err) => {
-                eprintln!("failed to create neccessary directories for tournament-basedir: {err}");
-                process::exit(1)
+                log::warn!("failed to create neccessary directories for tournament-basedir, due to {err}");
             }
         }
     }
@@ -1620,41 +1634,55 @@ fn main() -> Result<(), eframe::Error> {
     let lang_file = match get_config_dir() {
         Ok(lang_file) => lang_file,
         Err(err) => {
-            eprintln!("failed to get config dir: {err}");
-            process::exit(1)
+            log::error!("failed to get config dir, due to {err}");
+            crash();
         }
-    }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").expect("unreachable").as_str().expect("unreachable")));
+    }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").unwrap_or_else(|err| {
+        log::error!("failed to get language, due to {err}");
+        crash();
+    }).as_str().unwrap_or_else(|| {
+        log::error!("language-config is not a string");
+        crash();
+    })));
 
     #[cfg(not(feature = "unstable"))]
     if !lang_file.exists() {
         match create_dir_all(lang_file.parent().expect("unreachable")) {
             Ok(()) => {},
             Err(err) => {
-                eprintln!("failed to create neccessary directories for lang-file: {err}");
-                process::exit(1)
+                log::error!("failed to create neccessary directories for lang-file, due to {err}");
+                crash();
             }   
         }
 
         let mut lang_file = match File::options().write(true).create_new(true).open(lang_file) {
             Ok(lang_file) => lang_file,
             Err(err) => {
-                eprintln!("failed to create lang-file: {err}");
-                process::exit(1)
+                log::error!("failed to create lang-file, due to {err}");
+                crash();
             }
         };
 
-        let translations = match get_config("lang").expect("unreachable").as_str().expect("unreachable") {
+        let lang_value = get_config("lang").unwrap_or_else(|err| {
+            log::error!("failed to get lang-config, due to {err}");
+            crash();
+        });
+        let lang = lang_value.as_str().unwrap_or_else(|| {
+            log::error!("lang-config is not a string");
+            crash();
+        });
+        let translations = match lang {
             "de" => DEFAULT_TRANSLATIONS_DE,
             "en" => DEFAULT_TRANSLATIONS_EN,
-            // other in the future supported languages would be listed here
+            // other languages, that might be supported in the future, would be listed here
             _ => "{}"
         };
 
         match lang_file.write_all(translations.as_bytes()) {
             Ok(()) => {},
             Err(err) => {
-                eprintln!("failed to write default language: {err}");
-                process::exit(1)
+                log::error!("failed to write default language, due to {err}");
+                crash();
             }
         }
     }
@@ -1669,8 +1697,8 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(match translate("application.title") {
         Ok(title) => title,
         Err(err) => {
-            eprintln!("failed to setup app: {err}");
-            process::exit(1)
+            log::error!("failed to setup app, due to {err}");
+            crash();
         }
     }.as_str(), options, Box::new(|cc| {
         match EMelderApp::new(cc) {

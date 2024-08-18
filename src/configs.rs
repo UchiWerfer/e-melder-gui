@@ -186,10 +186,7 @@ pub fn translate(translation_key: &str) -> io::Result<String> {
     let translations = parsed.as_object().ok_or(
         io::Error::new(Other, "could not read configs"))?;
     let translation = translations.get(translation_key);
-    Ok(String::from(translation.map_or_else(|| {
-        eprintln!("translation not present");
-        Ok(translation_key)
-    }, |translation| {
+    Ok(String::from(translation.map_or(Ok(translation_key), |translation| {
         translation.as_str().ok_or(io::Error::other("translation not a string"))
     })?))
 }
