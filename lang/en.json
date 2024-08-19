@@ -98,6 +98,7 @@
     "about.update_popup_title": "Checking for updates",
     "about.check_update": "Check for updates",
     "about.update_available": "Update available!",
-    "about.no_update_available": "No update available, or you are running the \"unstable\"-version",
+    "about.no_update_available": "No update available.",
+    "about.running_unstable": "You are running the \"unstable\"-version.",
     "about.no_network": "Failed to build network-connection"
 }

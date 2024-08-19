@@ -59,9 +59,23 @@ fn get_default_config() -> io::Result<(String, PathBuf)> {
     Ok((serde_json::to_string(&default_config).expect("unreachable"), tournament_basedir))
 }
 
-fn check_update_available(current_version: &str) -> io::Result<bool> {
+#[derive(Debug)]
+enum UpdateAvailability {
+    UpdateAvailable,
+    NoUpdateAvailable,
+    RunningUnstable
+}
+
+impl From<bool> for UpdateAvailability {
+    fn from(value: bool) -> Self {
+        if value { Self::UpdateAvailable }
+        else { Self::NoUpdateAvailable }
+    }
+}
+
+fn check_update_available(current_version: &str) -> io::Result<UpdateAvailability> {
     if current_version == "unstable" {
-        return Ok(false);
+        return Ok(UpdateAvailability::RunningUnstable);
     }
     let body = reqwest::blocking::Client::builder().user_agent("").build().map_err(|err| {
         io::Error::other(err)
@@ -73,7 +87,7 @@ fn check_update_available(current_version: &str) -> io::Result<bool> {
     let parsed: serde_json::Value = serde_json::from_str(&body)?;
     let version_value = parsed.get("tag_name").ok_or(io::Error::other("did not get \"tag_name\" attribute in api-response"))?;
     let version = version_value.as_str().ok_or(io::Error::other("\"tag_name\" attribute is not a string"))?;
-    Ok((String::from("v") + current_version) != version)
+    Ok(((String::from("v") + current_version) != version).into())
 }
 
 #[derive(Default, Debug)]
@@ -1140,23 +1154,34 @@ impl EMelderApp {
             let update_available = check_update_available(VERSION);
             self.popup_open = true;
             if let Ok(update_available) = update_available {
-                if update_available {
-                    self.update_check_text = Some(match translate("about.update_available") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("about.update_available")
-                        }
-                    });
-                }
-                else {
-                    self.update_check_text = Some(match translate("about.no_update_available") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("about.no_update_available")
-                        }
-                    });
+                match update_available {
+                    UpdateAvailability::UpdateAvailable => {
+                        self.update_check_text = Some(match translate("about.update_available") {
+                            Ok(translation) => translation,
+                            Err(err) => {
+                                log::warn!("failed to get translation, due to {err}");
+                                String::from("about.update_available")
+                            }
+                        });
+                    }
+                    UpdateAvailability::NoUpdateAvailable => {
+                        self.update_check_text = Some(match translate("about.no_update_available") {
+                            Ok(translation) => translation,
+                            Err(err) => {
+                                log::warn!("failed to get translation, due to {err}");
+                                String::from("about.no_update_available")
+                            }
+                        });
+                    }
+                    UpdateAvailability::RunningUnstable => {
+                        self.update_check_text = Some(match translate("about.running_unstable") {
+                            Ok(translation) => translation,
+                            Err(err) => {
+                                log::warn!("failed to get translation, due to {err}");
+                                String::from("about.running_unstable")
+                            }
+                        });
+                    }
                 }
             }
             else {

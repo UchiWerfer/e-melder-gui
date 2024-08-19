@@ -98,6 +98,7 @@
     "about.update_popup_title": "Auf Updates prüfen",
     "about.check_update": "Auf Updates prüfen",
     "about.update_available": "Ein Update ist verfügbar, bitte laden Sie dieses herunter und folgen Sie den Anweisungen für Updates auf der Seite.",
-    "about.no_update_available": "Es ist kein Update verfügbar, oder Sie verwenden die \"unstable\"-Version",
+    "about.no_update_available": "Es ist kein Update verfügbar.",
+    "about.running_unstable": "Sie verwenden die \"unstable\"-Version.",
     "about.no_network": "Es konnte keine Netzwerk-Verbindung aufgebaut werden."
 }
