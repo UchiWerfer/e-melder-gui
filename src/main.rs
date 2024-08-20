@@ -90,6 +90,12 @@ fn check_update_available(current_version: &str) -> io::Result<UpdateAvailabilit
     Ok(((String::from("v") + current_version) != version).into())
 }
 
+fn write_language(language: &str, translations: &str) -> io::Result<()> {
+    let lang_file_path = get_config_dir()?.join("e-melder/lang").join(format!("{language}.json"));
+    let mut lang_file = File::options().read(false).write(true).truncate(true).create(true).open(lang_file_path)?;
+    lang_file.write_all(translations.as_bytes())
+}
+
 #[derive(Default, Debug)]
 enum Mode {
     #[default]
@@ -1644,6 +1650,35 @@ fn main() -> Result<(), eframe::Error> {
             Ok(()) => {},
             Err(err) => {
                 log::warn!("failed to write default-configs, due to {err}");
+            }
+        }
+
+        let lang_dir = match get_config_dir() {
+            Ok(config_dir) => config_dir,
+            Err(err) => {
+                log::error!("failed to get config-directory, due to {err}");
+                crash();
+            }
+        }.join("e-melder/lang");
+
+        match create_dir_all(lang_dir) {
+            Ok(()) => {
+                match write_language("en", DEFAULT_TRANSLATIONS_EN) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        log::warn!("failed to write english-translations, due to {err}");
+                    }
+                }
+                match write_language("de", DEFAULT_TRANSLATIONS_DE) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        log::warn!("failed to write german-translation, due to {err}");
+                    }
+
+                }
+            }
+            Err(err) => {
+                log::warn!("failed to create neccessary directories for lang-files, due to {err}");
             }
         }
 
