@@ -90,6 +90,7 @@ fn check_update_available(current_version: &str) -> io::Result<UpdateAvailabilit
     Ok(((String::from("v") + current_version) != version).into())
 }
 
+#[cfg(not(feature="unstable"))]
 fn write_language(language: &str, translations: &str) -> io::Result<()> {
     let lang_file_path = get_config_dir()?.join("e-melder/lang").join(format!("{language}.json"));
     let mut lang_file = File::options().read(false).write(true).truncate(true).create(true).open(lang_file_path)?;
@@ -1653,6 +1654,7 @@ fn main() -> Result<(), eframe::Error> {
             }
         }
 
+        #[cfg(not(feature="unstable"))]
         let lang_dir = match get_config_dir() {
             Ok(config_dir) => config_dir,
             Err(err) => {
@@ -1661,6 +1663,7 @@ fn main() -> Result<(), eframe::Error> {
             }
         }.join("e-melder/lang");
 
+        #[cfg(not(feature="unstable"))]
         match create_dir_all(lang_dir) {
             Ok(()) => {
                 match write_language("en", DEFAULT_TRANSLATIONS_EN) {
