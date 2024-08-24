@@ -78,6 +78,7 @@
     "config.club_file.file_picker": "Wählen Sie die Datei mit den Vereinsdaten aus",
     "config.select_tournament_basedir": "Ordner für die Meldedateien:",
     "config.tournament_basedir.file_picker": "Wählen Sie den Ordner für die Meldedateien aus",
+    "config.default_gender_category": "Standard-Einstellung für die Geschlechtsklasse",
     "config.save": "Einstellungen speichern",
     "graduate.given_name": "Vorname",
     "graduate.sur_name": "Nachname",

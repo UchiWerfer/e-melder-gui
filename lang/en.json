@@ -78,6 +78,7 @@
     "config.club_file.file_picker": "Select the file containing the club-data",
     "config.select_tournament_basedir": "Folder for the signing-up files:",
     "config.tournament_basedir.file_picker": "Select the folder for the signing-up files",
+    "config.default_gender_category": "Default-setting for the gender-category",
     "config.save": "Save settings",
     "graduate.given_name": "Given name",
     "graduate.sur_name": "Surname",

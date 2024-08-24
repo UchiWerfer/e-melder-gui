@@ -469,6 +469,15 @@ impl GenderCategory {
             Self::Mixed => "g"
         }
     }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        Some(match s {
+            "w" => Self::Female,
+            "m" => Self::Male,
+            "g" => Self::Mixed,
+            _ => return None
+        })
+    }
 }
 
 pub struct Tournament {
@@ -543,9 +552,9 @@ impl RegisteringAthlete {
         }
     }
 
-    pub fn from_athlete(athlete: &Athlete) -> Self {
+    pub fn from_athlete(athlete: &Athlete, default_gender_category: GenderCategory) -> Self {
         Self::new(athlete.given_name.clone(), athlete.sur_name.clone(), athlete.belt,
-        athlete.weight_category.to_string(), athlete.birth_year, GenderCategory::Mixed, String::new())
+        athlete.weight_category.to_string(), athlete.birth_year, default_gender_category, String::new())
     }
 
     pub fn get_given_name(&self) -> &str {

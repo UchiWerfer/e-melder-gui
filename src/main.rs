@@ -159,7 +159,8 @@ struct Config {
     athletes_file: PathBuf,
     club_file: PathBuf,
     tournament_basedir: String,
-    langs: Vec<String>
+    langs: Vec<String>,
+    default_gender_category: GenderCategory
 }
 
 #[derive(Debug)]
@@ -250,6 +251,27 @@ impl EMelderApp {
                     Err (err) => {
                         log::error!("could net get tournament-basedir-config, due to {err}");
                         crash();
+                    },
+                },
+                default_gender_category: match get_config("default-gender-category") {
+                    Ok(dgc_value) => match dgc_value.as_str() {
+                        Some(dgc_str) => {
+                            match GenderCategory::from_str(dgc_str) {
+                                Some(dgc) => dgc,
+                                None => {
+                                    log::warn!("default-gender-category-config does not represent a gender-category");
+                                    GenderCategory::Mixed
+                                }
+                            }
+                        }
+                        None => {
+                            log::warn!("default-gender-category-config is not a string");
+                            GenderCategory::Mixed
+                        }
+                    },
+                    Err(err) => {
+                        log::warn!("failed to get default-gender-category-config, due to {err}");
+                        GenderCategory::Mixed
                     }
                 },
                 langs: languages
@@ -432,7 +454,7 @@ impl EMelderApp {
                         }
                     });
                 }
-            })
+            });
         });
         ui.horizontal(|ui| {
             ui.label(match translate("add.year") {
@@ -1055,6 +1077,31 @@ impl EMelderApp {
             }
         });
 
+        egui::ComboBox::from_label(match translate("config.default_gender_category") {
+            Ok(translation) => translation,
+            Err(err) => {
+                log::warn!("failed to get translation, due to {err}");
+                String::from("config.default_gender_category")
+            }
+        }).selected_text(match translate(&format!("register.table.gender_category.{}", self.config.default_gender_category.render())) {
+            Ok(translation) => translation,
+            Err(err) => {
+                log::warn!("failed to get translation, due to {err}");
+                format!("register.table.gender_category.{}", self.config.default_gender_category.render())
+            }
+        }).show_ui(ui, |ui| {
+            for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
+                ui.selectable_value(&mut self.config.default_gender_category, gender_category,
+                    match translate(&format!("register.table.gender_category.{}", gender_category.render())) {
+                        Ok(translation) => translation,
+                        Err(err) => {
+                            log::warn!("failed to get translation, due to {err}");
+                            format!("register.table.gender_category.{}", gender_category.render())
+                        }
+                    });
+            }
+        });
+
         if ui.button(match translate("config.save") {
             Ok(translation) => translation,
             Err(err) => {
@@ -1065,40 +1112,42 @@ impl EMelderApp {
             match write_config("lang", self.config.lang.clone().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    log::error!("failed to set config, due to {err}");
-                    crash();
+                    log::warn!("failed to set config, due to {err}");
                 }
             }
             
             match write_config("dark-mode", self.config.dark_mode.into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    log::error!("failed to set config, due to {err}");
-                    crash();
+                    log::warn!("failed to set config, due to {err}");
                 }
             }
 
             match write_config("athletes-file", self.config.athletes_file.display().to_string().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    log::error!("failed to set config, due to {err}");
-                    crash();
+                    log::warn!("failed to set config, due to {err}");
                 }
             }
 
             match write_config("club-file", self.config.club_file.display().to_string().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    log::error!("failed to set config, due to {err}");
-                    crash();
+                    log::warn!("failed to set config, due to {err}");
                 }
             }
 
             match write_config("tournament-basedir", self.config.tournament_basedir.clone().into()) {
                 Ok(()) => {},
                 Err(err) => {
-                    log::error!("failed to set config, due to {err}");
-                    crash();
+                    log::warn!("failed to set config, due to {err}");
+                }
+            }
+
+            match write_config("default-gender-category", self.config.default_gender_category.render().into()) {
+                Ok(()) => {},
+                Err(err) => {
+                    log::warn!("failed to set config, due to {err}");
                 }
             }
         }
@@ -1445,7 +1494,8 @@ impl EMelderApp {
                                     String::from("register.table.add")
                                 }
                             }).clicked() {
-                                self.registering.athletes.push(RegisteringAthlete::from_athlete(athlete));
+                                self.registering.athletes.push(RegisteringAthlete::from_athlete(athlete,
+                                    self.config.default_gender_category));
                             }
                         });
                     });
