@@ -56,6 +56,7 @@ fn get_default_config() -> io::Result<(String, PathBuf)> {
     default_config.insert(String::from("club-file"), club_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("athletes-file"), athletes_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("tournament-basedir"), tournament_basedir.to_str().expect("unreachable").into());
+    default_config.insert(String::from("default-gender-category"), "g".into());
     Ok((serde_json::to_string(&default_config).expect("unreachable"), tournament_basedir))
 }
 
