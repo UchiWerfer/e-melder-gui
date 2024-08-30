@@ -5,7 +5,7 @@ mod tournament_info;
 
 use std::collections::HashMap;
 use std::fs::{create_dir_all, File};
-use std::{io, process};
+use std::io;
 use std::io::{Read, Seek, Write};
 use std::path::PathBuf;
 
