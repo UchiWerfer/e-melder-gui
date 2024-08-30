@@ -6,7 +6,7 @@ mod tournament_info;
 use std::collections::HashMap;
 use std::fs::{create_dir_all, File};
 use std::{io, process};
-use std::io::Write;
+use std::io::{Read, Seek, Write};
 use std::path::PathBuf;
 
 use chrono::{Local, NaiveDate};
@@ -1637,6 +1637,99 @@ fn crash() -> ! {
     panic!()
 }
 
+#[cfg(not(feature="unstable"))]
+fn update_translations() -> io::Result<()> {
+    let latest_version_path = match get_config_dir() {
+        Ok(config_dir) => config_dir,
+        Err(err) => {
+            log::error!("failed to get config-dir, due to {err}");
+            crash();
+        }
+    }.join("e-melder/latest");
+
+    #[allow(clippy::if_not_else)]
+    if !latest_version_path.exists() {
+        let lang_dir = match get_config_dir() {
+            Ok(config_dir) => config_dir,
+            Err(err) => {
+                log::error!("failed to get config-directory, due to {err}");
+                crash();
+            }
+        }.join("e-melder/lang");
+
+        match create_dir_all(lang_dir) {
+            Ok(()) => {
+                match write_language("en", DEFAULT_TRANSLATIONS_EN) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        log::warn!("failed to write english-translations, due to {err}");
+                    }
+                }
+                match write_language("de", DEFAULT_TRANSLATIONS_DE) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        log::warn!("failed to write german-translation, due to {err}");
+                    }
+
+                }
+            }
+            Err(err) => {
+                log::warn!("failed to create neccessary directories for lang-files, due to {err}");
+                return Ok(());
+            }
+        }
+
+        let mut latest_version_file =  File::options().create(true).write(true).truncate(true)
+            .open(&latest_version_path)?;
+        latest_version_file.write_all(VERSION.as_bytes())?;
+    }
+    else {
+        let mut latest_version_file = File::options().read(true).open(&latest_version_path)?;
+        // x.y.z usually requires 5 bytes, one per '.' and one each for x, y and z.
+        // 1 extra bytes in case of unexpectedly long versions
+        let mut latest_version = String::with_capacity(6);
+        dbg!(latest_version_file.read_to_string(&mut latest_version)?);
+        if latest_version != VERSION {
+            dbg!(latest_version);
+            let lang_dir = match get_config_dir() {
+                Ok(config_dir) => config_dir,
+                Err(err) => {
+                    log::error!("failed to get config-directory, due to {err}");
+                    crash();
+                }
+            }.join("e-melder/lang");
+                    
+            match create_dir_all(lang_dir) {
+                Ok(()) => {
+                    match write_language("en", DEFAULT_TRANSLATIONS_EN) {
+                        Ok(()) => {}
+                        Err(err) => {
+                            log::warn!("failed to write english-translations, due to {err}");
+                        }
+                    }
+                    match write_language("de", DEFAULT_TRANSLATIONS_DE) {
+                        Ok(()) => {}
+                        Err(err) => {
+                            log::warn!("failed to write german-translation, due to {err}");
+                        }
+    
+                    }
+                }
+                Err(err) => {
+                    log::warn!("failed to create neccessary directories for lang-files, due to {err}");
+                }
+            }
+
+            drop(latest_version_file);
+            let mut latest_version_file = File::options().write(true).truncate(true).open(&latest_version_path)?;
+            latest_version_file.seek(io::SeekFrom::Start(0))?;
+            latest_version_file.write_all(VERSION.as_bytes())?;
+        }
+    }
+
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), eframe::Error> {
     let stdout_logger = ConsoleAppender::builder().build();
@@ -1743,6 +1836,15 @@ fn main() -> Result<(), eframe::Error> {
             }
         }
     }
+
+
+    #[cfg(not(feature="unstable"))]
+    match update_translations() {
+        Ok(()) => {}
+        Err(err) => {
+            log::warn!("failed to update translations, due to {err}");
+        }
+    };
 
     #[cfg(not(feature = "unstable"))]
     let lang_file = match get_config_dir() {
