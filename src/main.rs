@@ -830,8 +830,8 @@ impl EMelderApp {
             let path_value = match get_config("club-file") {
                 Ok(path) => path,
                 Err(err) => {
-                    eprintln!("failed to get config: {err}");
-                    process::exit(1)
+                    log::error!("failed to get config club-file, due to {err}");
+                    crash();
                 }
             };
             #[allow(clippy::single_match_else)]
@@ -1642,7 +1642,7 @@ fn update_translations() -> io::Result<()> {
     let latest_version_path = match get_config_dir() {
         Ok(config_dir) => config_dir,
         Err(err) => {
-            log::error!("failed to get config-dir, due to {err}");
+            log::error!("failed to get config-directory, due to {err}");
             crash();
         }
     }.join("e-melder/latest");
