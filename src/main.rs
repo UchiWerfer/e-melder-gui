@@ -283,45 +283,21 @@ impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     fn show_registering(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(match translate("register.name") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("register.name")
-                }
-            });
+            ui.label(translate!("register.name"));
             ui.text_edit_singleline(&mut self.registering.name);
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("register.place") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("register.place")
-                }
-            });
+            ui.label(translate!("register.place"));
             ui.text_edit_singleline(&mut self.registering.place);
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("register.date") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("register.date")
-                }
-            });
+            ui.label(translate!("register.date"));
             ui.add(egui_extras::DatePickerButton::new(&mut self.registering.date).format("%d.%m.%Y"));
         });
 
-        if ui.button(match translate("register.register") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("register.register")
-            }
-        }).clicked() {
+        if ui.button(translate!("register.register")).clicked() {
             let tournaments = registering_athletes_to_tournaments(
                 &self.registering.athletes, &self.registering.name, self.registering.date,
                 &self.registering.place, &self.club);
@@ -357,35 +333,11 @@ impl EMelderApp {
                 #[cfg(all(target_family="unix", not(target_os="macos")))]
                 std::thread::spawn(|| {
                     let _ = notify_rust::Notification::new()
-                    .summary(&match translate("application.title") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("application.title")
-                        }
-                    })
-                    .body(&match translate("register.notification.ask") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.applicatoin.ask")
-                        }
-                    })
+                    .summary(&translate!("application.title"))
+                    .body(&translate!("register.notification.ask"))
                     .sound_name("dialog-question")
-                    .action("yes", &match translate("register.notification.yes") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.notification.yes")
-                        }
-                    })
-                    .action("no", &match translate("register.notification.no") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.notification.no")
-                        }
-                    })
+                    .action("yes", &translate!("register.notification.yes"))
+                    .action("no", &translate!("register.notification.no"))
                     .show().map(|handle| {
                         handle.wait_for_action(|action| {
                             if action == "yes" {
@@ -411,70 +363,30 @@ impl EMelderApp {
 
     fn show_adding(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(match translate("add.given_name") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("add.given_name")
-                }
-            });
+            ui.label(translate!("add.given_name"));
             ui.text_edit_singleline(&mut self.adding.given_name);
         });
         ui.horizontal(|ui| {
-            ui.label(match translate("add.sur_name") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("add.sur_name")
-                }
-            });
+            ui.label(translate!("add.sur_name"));
             ui.text_edit_singleline(&mut self.adding.sur_name);
         });
         ui.horizontal(|ui| {
-            egui::ComboBox::from_label(match translate("add.belt") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("add.belt")
-                }
-            }).selected_text(match translate(&format!("add.belt.{}", self.adding.belt.serialise())) {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    format!("add.belt.{}", self.adding.belt.serialise())
-                }
-            }).show_ui(ui, |ui| {
+            egui::ComboBox::from_label(translate!("add.belt"))
+            .selected_text(translate!(&format!("add.belt.{}", self.adding.belt.serialise())))
+            .show_ui(ui, |ui| {
                 for belt in [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, Belt::Kyu5, Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1,
                 Belt::Dan1, Belt::Dan2, Belt::Dan3, Belt::Dan4, Belt::Dan5, Belt::Dan6, Belt::Dan7, Belt::Dan8, Belt::Dan9, Belt::Dan10] {
-                    ui.selectable_value(&mut self.adding.belt, belt, match translate(
-                        &format!("add.belt.{}", belt.serialise())) {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            format!("add.belt.{}", belt.serialise())
-                        }
-                    });
+                    ui.selectable_value(&mut self.adding.belt, belt, translate!(
+                        &format!("add.belt.{}", belt.serialise())));
                 }
             });
         });
         ui.horizontal(|ui| {
-            ui.label(match translate("add.year") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("add.year")
-                }
-            });
+            ui.label(translate!("add.year"));
             ui.add(egui::Slider::new(&mut self.adding.year, 1900..=2100));
         });
 
-        if ui.button(match translate("add.commit") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("add.commit")
-            }
-        }).clicked() {
+        if ui.button(translate!("add.commit")).clicked() {
             self.athletes.push(Athlete::new(
                 self.adding.given_name.clone(), self.adding.sur_name.clone(),
                 self.adding.year, self.adding.belt, WeightCategory::default()
@@ -508,13 +420,7 @@ impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     fn show_graduating(&mut self, ui: &mut Ui) {
         if self.athletes.is_empty() {
-            if ui.button(match translate("graduate.empty") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("graduate.empty")
-                }
-            }).clicked() {
+            if ui.button(translate!("graduate.empty")).clicked() {
                 self.mode = Mode::Adding;
             }
             return;
@@ -527,40 +433,16 @@ impl EMelderApp {
 
         table.header(20.0, |mut header| {
             header.col(|ui| {
-                ui.strong(match translate("graduate.given_name") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("graduate.given_name")
-                    }
-                });
+                ui.strong(translate!("graduate.given_name"));
             });
             header.col(|ui| {
-                ui.strong(match translate("graduate.sur_name") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("graduate.sur_name")
-                    }
-                });
+                ui.strong(translate!("graduate.sur_name"));
             });
             header.col(|ui| {
-                ui.strong(match translate("graduate.year") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("graduate.year")
-                    }
-                });
+                ui.strong(translate!("graduate.year"));
             });
             header.col(|ui| {
-                ui.strong(match translate("graduate.belt") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("graduate.belt")
-                    }
-                });
+                ui.strong(translate!("graduate.belt"));
             });
             header.col(|_ui| {});
         }).body(|mut body| {
@@ -579,23 +461,11 @@ impl EMelderApp {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                format!("add.belt.{}", athlete.get_belt().serialise())
-                            }
-                        });
+                        ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise())));
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        if ui.button(match translate("graduate.graduate") {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                String::from("graduate.graduate")
-                            }
-                        }).clicked() {
+                        if ui.button(translate!("graduate.graduate")).clicked() {
                             to_graduate = Some(index);
                         }
                     });
@@ -634,199 +504,91 @@ impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     fn show_edit(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.club_name") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.club_name")
-                }
-            });
+            ui.label(translate!("edit.club_name"));
             ui.text_edit_singleline(self.club.get_name_mut());
         });
         
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.given_name") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.given_name")
-                }
-            });
+            ui.label(translate!("edit.given_name"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_given_name_mut());
         });
         
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.sur_name") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.sur_name")
-                }
-            });
+            ui.label(translate!("edit.sur_name"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_sur_name_mut());
         });
         
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.address") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.address")
-                }
-            });
+            ui.label(translate!("edit.address"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_address_mut());
         });
         
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.postal_code") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.postal_code")
-                }
-            });
+            ui.label(translate!("edit.postal_code"));
             ui.add(egui::DragValue::new(self.club.get_sender_mut().get_postal_code_mut()));
         });
         
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.town") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.town")
-                }
-            });
+            ui.label(translate!("edit.town"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_town_mut());
         });
         
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.private") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.private")
-                }
-            });
+            ui.label(translate!("edit.private"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_private_phone_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.public") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.public")
-                }
-            });
+            ui.label(translate!("edit.public"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_public_phone_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.fax") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.fax")
-                }
-            });
+            ui.label(translate!("edit.fax"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_fax_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.mobile") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get transation, due to {err}");
-                    String::from("edit.mobile")
-                }
-            });
+            ui.label(translate!("edit.mobile"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_mobile_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.mail") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.mail")
-                }
-            });
+            ui.label(translate!("edit.mail"));
             ui.text_edit_singleline(self.club.get_sender_mut().get_mail_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.club_number") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.club_number")
-                }
-            });
+            ui.label(translate!("edit.club_number"));
             ui.add(egui::DragValue::new(self.club.get_number_mut()));
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.county") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.county")
-                }
-            });
+            ui.label(translate!("edit.county"));
             ui.text_edit_singleline(self.club.get_county_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.region") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.region")
-                }
-            });
+            ui.label(translate!("edit.region"));
             ui.text_edit_singleline(self.club.get_region_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.state") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.state")
-                }
-            });
+            ui.label(translate!("edit.state"));
             ui.text_edit_singleline(self.club.get_state_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.group") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.group")
-                }
-            });
+            ui.label(translate!("edit.group"));
             ui.text_edit_singleline(self.club.get_group_mut());
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("edit.nation") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("edit.nation")
-                }
-            });
+            ui.label(translate!("edit.nation"));
             ui.text_edit_singleline(self.club.get_nation_mut());
         });
 
-        if ui.button(match translate("edit.save") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("edit.save")
-            }
-        }).clicked() {
+        if ui.button(translate!("edit.save")).clicked() {
             let path_value = match get_config("club-file") {
                 Ok(path) => path,
                 Err(err) => {
@@ -855,13 +617,7 @@ impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     fn show_delete(&mut self, ui: &mut Ui) {
         if self.athletes.is_empty() {
-            ui.label(match translate("delete.empty") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("delete.empty")
-                }
-            });
+            ui.label(translate!("delete.empty"));
             return;
         }
 
@@ -871,40 +627,16 @@ impl EMelderApp {
 
         table.header(20.0, |mut header| {
             header.col(|ui| {
-                ui.strong(match translate("delete.given_name") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("delete.given_name")
-                    }
-                });
+                ui.strong(translate!("delete.given_name"));
             });
             header.col(|ui| {
-                ui.strong(match translate("delete.sur_name") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("delete.sur_name")
-                    }
-                });
+                ui.strong(translate!("delete.sur_name"));
             });
             header.col(|ui| {
-                ui.strong(match translate("delete.year") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("delete.year")
-                    }
-                });
+                ui.strong(translate!("delete.year"));
             });
             header.col(|ui| {
-                ui.strong(match translate("delete.belt") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("delete.belt")
-                    }
-                });
+                ui.strong(translate!("delete.belt"));
             });
             header.col(|_ui| {});
         }).body(|mut body| {
@@ -923,23 +655,11 @@ impl EMelderApp {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                format!("add.belt.{}", athlete.get_belt().serialise())
-                            }
-                        });
+                        ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise())));
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        if ui.button(match translate("delete.delete") {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                String::from("delete.delete")
-                            }
-                        }).clicked() {
+                        if ui.button(translate!("delete.delete")).clicked() {
                             to_delete = Some(index);
                         }
                     });
@@ -977,47 +697,24 @@ impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     fn show_config(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            egui::ComboBox::from_label(match translate("config.lang") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("config.lang")
-                }
-            })
+            egui::ComboBox::from_label(translate!("config.lang"))
             .selected_text(*LANG_NAMES.get(self.config.lang.as_str()).unwrap_or(&self.config.lang.as_str()))
             .show_ui(ui, |ui| {
                 for lang in &self.config.langs {
-                    ui.selectable_value(&mut self.config.lang, lang.clone(), *LANG_NAMES.get(lang.as_str()).unwrap_or(&lang.as_str()));
+                    ui.selectable_value(&mut self.config.lang, lang.clone(),
+                    *LANG_NAMES.get(lang.as_str()).unwrap_or(&lang.as_str()));
                 }
             });
         });
         
-        ui.checkbox(&mut self.config.dark_mode, match translate("config.dark_mode") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("config.dark_mode")
-            }
-        });
+        ui.checkbox(&mut self.config.dark_mode, translate!("config.dark_mode"));
 
         ui.horizontal(|ui| {
-            ui.label(match translate("config.select_athletes_file") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("config.select_athletes_file")
-                }
-            });
+            ui.label(translate!("config.select_athletes_file"));
             if ui.button(self.config.athletes_file.display().to_string()).clicked() {
                 #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_can_create_directories(true)
-                    .set_title(match translate("config.athletes_file.file_picker") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("config.athletes_file.file_picker")
-                        }
-                    }).save_file() {
+                    .set_title(translate!("config.athletes_file.file_picker")).save_file() {
                         Some(athletes_file) => {
                             self.config.athletes_file = athletes_file;
                         }
@@ -1027,23 +724,11 @@ impl EMelderApp {
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("config.select_club_file") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("config.select_club_file")
-                }
-            });
+            ui.label(translate!("config.select_club_file"));
             if ui.button(self.config.club_file.display().to_string()).clicked() {
                 #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_can_create_directories(true)
-                    .set_title(match translate("config.club_file.file_picker") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation: {err}");
-                            String::from("config.club_file.file_picker")
-                        }
-                    }).save_file() {
+                    .set_title(translate!("config.club_file.file_picker")).save_file() {
                         Some(club_file) => {
                             self.config.club_file = club_file;
                         }
@@ -1053,23 +738,12 @@ impl EMelderApp {
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("config.select_tournament_basedir") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation: {err}");
-                    String::from("config.select_tournament_basedir")
-                }
-            });
+            ui.label(translate!("config.select_tournament_basedir"));
             if ui.button(&self.config.tournament_basedir).clicked() {
                 #[allow(clippy::single_match)]
                 match rfd::FileDialog::new().set_directory(&self.config.tournament_basedir)
-                    .set_can_create_directories(true).set_title(match translate("config.tournament_basedir.file_picker") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation: {err}");
-                            String::from("conig.tournament_basedir.file_picker")
-                        }
-                    }).pick_folder() {
+                    .set_can_create_directories(true).set_title(translate!("config.tournament_basedir.file_picker"))
+                    .pick_folder() {
                         Some(directory) => {
                             self.config.tournament_basedir = directory.display().to_string();
                         },
@@ -1078,38 +752,16 @@ impl EMelderApp {
             }
         });
 
-        egui::ComboBox::from_label(match translate("config.default_gender_category") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("config.default_gender_category")
-            }
-        }).selected_text(match translate(&format!("register.table.gender_category.{}", self.config.default_gender_category.render())) {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                format!("register.table.gender_category.{}", self.config.default_gender_category.render())
-            }
-        }).show_ui(ui, |ui| {
+        egui::ComboBox::from_label(translate!("config.default_gender_category"))
+        .selected_text(translate!(&format!("register.table.gender_category.{}", self.config.default_gender_category.render())))
+        .show_ui(ui, |ui| {
             for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
                 ui.selectable_value(&mut self.config.default_gender_category, gender_category,
-                    match translate(&format!("register.table.gender_category.{}", gender_category.render())) {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            format!("register.table.gender_category.{}", gender_category.render())
-                        }
-                    });
+                    translate!(&format!("register.table.gender_category.{}", gender_category.render())));
             }
         });
 
-        if ui.button(match translate("config.save") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("config.save")
-            }
-        }).clicked() {
+        if ui.button(translate!("config.save")).clicked() {
             match write_config("lang", self.config.lang.clone().into()) {
                 Ok(()) => {},
                 Err(err) => {
@@ -1155,101 +807,47 @@ impl EMelderApp {
     }
 
     fn show_about(&mut self, ui: &mut Ui) {
-        ui.label(match translate("about.about") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("about.about")
-            }
-        });
+        ui.label(translate!("about.about"));
         ui.separator();
 
         ui.horizontal(|ui| {
-            ui.label(match translate("about.version") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("about.version")
-                }
-            });
+            ui.label(translate!("about.version"));
             ui.label(VERSION);
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("about.license") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("about.license")
-                }
-            });
+            ui.label(translate!("about.license"));
             if ui.link(LICENSE).on_hover_text(LICENSE_LINK).clicked() {
                 let _ = open::that_detached(LICENSE_LINK);
             }
         });
 
         ui.horizontal(|ui| {
-            ui.label(match translate("about.source_code") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("about.source_code")
-                }
-            });
+            ui.label(translate!("about.source_code"));
             if ui.link(CODE_LINK).on_hover_text(CODE_LINK).clicked() {
                 let _ = open::that_detached(CODE_LINK);
             }
         });
 
-        if ui.button(match translate("about.check_update") {
-            Ok(translation) => translation,
-            Err(err) => {
-                log::warn!("failed to get translation, due to {err}");
-                String::from("about.check_update")
-            }
-        }).clicked() {
+        if ui.button(translate!("about.check_update")).clicked() {
             let update_available = check_update_available(VERSION);
             self.popup_open = true;
             if let Ok(update_available) = update_available {
                 match update_available {
                     UpdateAvailability::UpdateAvailable => {
-                        self.update_check_text = Some(match translate("about.update_available") {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                String::from("about.update_available")
-                            }
-                        });
+                        self.update_check_text = Some(translate!("about.update_available"));
                     }
                     UpdateAvailability::NoUpdateAvailable => {
-                        self.update_check_text = Some(match translate("about.no_update_available") {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                String::from("about.no_update_available")
-                            }
-                        });
+                        self.update_check_text = Some(translate!("about.no_update_available"));
                     }
                     UpdateAvailability::RunningUnstable => {
-                        self.update_check_text = Some(match translate("about.running_unstable") {
-                            Ok(translation) => translation,
-                            Err(err) => {
-                                log::warn!("failed to get translation, due to {err}");
-                                String::from("about.running_unstable")
-                            }
-                        });
+                        self.update_check_text = Some(translate!("about.running_unstable"));
                     }
                 }
             }
             else {
                 log::warn!("failed to get new version information from network: {}", update_available.unwrap_err()); // cannot panic, as it was checked above for `Ok`
-                self.update_check_text = Some(match translate("about.no_network") {
-                    Ok(translation) => translation,
-                    Err(err) => {
-                        log::warn!("failed to get translation, due to {err}");
-                        String::from("about.no_network")
-                    }
-                });
+                self.update_check_text = Some(translate!("about.no_network"));
             }
         }
     }
@@ -1264,67 +862,25 @@ impl EMelderApp {
 
             table.header(20.0, |mut header| {
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.given_name") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.given_name")
-                        }
-                    });
+                    ui.strong(translate!("register.table.given_name"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.sur_name") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.sur_name")
-                        }
-                    });
+                    ui.strong(translate!("register.table.sur_name"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.belt") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.belt")
-                        }
-                    });
+                    ui.strong(translate!("register.table.belt"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.year") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.year")
-                        }
-                    });
+                    ui.strong(translate!("register.table.year"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.gender_category") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.gender_category")
-                        }
-                    });
+                    ui.strong(translate!("register.table.gender_category"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.age_category") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.age_category")
-                        }
-                    });
+                    ui.strong(translate!("register.table.age_category"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.weight_category") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.weight_category")
-                        }
-                    });
+                    ui.strong(translate!("register.table.weight_category"));
                 });
                 header.col(|_ui| {});
             }).body(|mut body| {
@@ -1340,13 +896,7 @@ impl EMelderApp {
                         });
                         row.col(|ui| {
                             ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                            ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
-                                Ok(translation) => translation,
-                                Err(err) => {
-                                    log::warn!("failed to get translation, due to {err}");
-                                    format!("add.belt.{}", athlete.get_belt().serialise())
-                                }
-                            });
+                            ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise())));
                         });
                         row.col(|ui| {
                             ui.label(athlete.get_birth_year().to_string());
@@ -1354,25 +904,13 @@ impl EMelderApp {
                         row.col(|ui| {
                             ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                             egui::ComboBox::from_id_source(index)
-                            .selected_text(match translate(
-                                &format!("register.table.gender_category.{}", athlete.get_gender_category().render())) {
-                                    Ok(translation) => translation,
-                                    Err(err) => {
-                                        log::warn!("failed to get translation, due to {err}");
-                                        format!("register.table.gender_category.{}", athlete.get_gender_category().render())
-                                    }
-                                }).show_ui(ui, |ui| {
-                                    for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
-                                        ui.selectable_value(athlete.get_gender_category_mut(), gender_category,
-                                            match translate(&format!("register.table.gender_category.{}", gender_category.render())) {
-                                                Ok(translation) => translation,
-                                                Err(err) => {
-                                                    log::warn!("failed to get translation: {err}");
-                                                    format!("register.table.gender_category.{}", gender_category.render())
-                                                }
-                                            });
-                                    }
-                                });
+                            .selected_text(translate!(&format!("register.table.gender_category.{}", athlete.get_gender_category().render())))
+                            .show_ui(ui, |ui| {
+                                for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
+                                    ui.selectable_value(athlete.get_gender_category_mut(), gender_category,
+                                        translate!(&format!("register.table.gender_category.{}", gender_category.render())));
+                                }
+                            });
                         });
                         row.col(|ui| {
                             ui.text_edit_singleline(athlete.get_age_category_mut());
@@ -1382,13 +920,7 @@ impl EMelderApp {
                         });
                         row.col(|ui| {
                             ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                            if ui.button(match translate("register.table.delete") {
-                                Ok(translation) => translation,
-                                Err(err) => {
-                                    log::warn!("failed to get translation, due to {err}");
-                                    String::from("register.table.delete")
-                                }
-                            }).clicked() {
+                            if ui.button(translate!("register.table.delete")).clicked() {
                                 to_delete = Some(index);
                             }
                         });
@@ -1405,13 +937,7 @@ impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     fn show_table_registering_adding(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label(match translate("register.search") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to obtain translation, due to {err}");
-                    String::from("register.search")
-                }
-            });
+            ui.label(translate!("register.search"));
             ui.text_edit_singleline(&mut self.registering.search);
         });
 
@@ -1422,40 +948,16 @@ impl EMelderApp {
 
             table.header(20.0, |mut header| {
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.given_name") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.given_name")
-                        }
-                    });
+                    ui.strong(translate!("register.table.given_name"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.sur_name") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.sur_name")
-                        }
-                    });
+                    ui.strong(translate!("register.table.sur_name"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.belt") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.belt")
-                        }
-                    });
+                    ui.strong(translate!("register.table.belt"));
                 });
                 header.col(|ui| {
-                    ui.strong(match translate("register.table.year") {
-                        Ok(translation) => translation,
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            String::from("register.table.year")
-                        }
-                    });
+                    ui.strong(translate!("register.table.year"));
                 });
             }).body(|mut body| {
                 for athlete in &self.athletes {
@@ -1475,26 +977,14 @@ impl EMelderApp {
                         });
                         row.col(|ui| {
                             ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                            ui.label(match translate(&format!("add.belt.{}", athlete.get_belt().serialise())) {
-                                Ok(translation) => translation,
-                                Err(err) => {
-                                    log::warn!("failed to get translation, due to {err}");
-                                    format!("add.belt.{}", athlete.get_belt().serialise())
-                                }
-                            });
+                            ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise())));
                         });
                         row.col(|ui| {
                             ui.label(athlete.get_birth_year().to_string());
                         });
                         row.col(|ui| {
                             ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                            if ui.button(match translate("register.table.add") {
-                                Ok(translation) => translation,
-                                Err(err) => {
-                                    log::warn!("failed to get translation, due to {err}");
-                                    String::from("register.table.add")
-                                }
-                            }).clicked() {
+                            if ui.button(translate!("register.table.add")).clicked() {
                                 self.registering.athletes.push(RegisteringAthlete::from_athlete(athlete,
                                     self.config.default_gender_category));
                             }
@@ -1505,13 +995,7 @@ impl EMelderApp {
         });
 
         if !athletes_shown {
-            ui.label(match translate("register.empty") {
-                Ok(translation) => translation,
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    String::from("register.empty")
-                }
-            });
+            ui.label(translate!("register.empty"));
         }
     }
 }

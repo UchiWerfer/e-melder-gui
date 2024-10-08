@@ -221,3 +221,18 @@ pub fn write_config(config: &str, value: serde_json::Value) -> io::Result<()> {
     let mut file_write = File::options().write(true).truncate(true).open(&config_file)?;
     file_write.write_all(serde_json::to_string(&configs)?.as_bytes())
 }
+
+#[macro_export]
+macro_rules! translate {
+    ($translation_key:expr) => {
+        {
+            match $crate::configs::translate($translation_key) {
+                Ok(translation) => translation,
+                Err(err) => {
+                    log::warn!("failed to get translation, due to {err}");
+                    $translation_key.to_owned()
+                }
+            }
+        }
+    };
+}
