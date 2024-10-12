@@ -248,7 +248,7 @@ pub struct Sender {
     given_name: String,
     sur_name: String,
     address: String,
-    postal_code: u16,
+    postal_code: u32,
     town: String,
     private_phone: String,
     public_phone: String,
@@ -260,7 +260,7 @@ pub struct Sender {
 impl Sender {
     #[allow(clippy::too_many_arguments)]
     pub fn new(club_name: String, given_name: String, sur_name: String, address: String,
-            postal_code: u16, town: String, private_phone: String, public_phone: String,
+            postal_code: u32, town: String, private_phone: String, public_phone: String,
             fax: String, mobile: String, mail: String) -> Self {
         Sender {
             club_name, given_name, sur_name, address, postal_code, town, private_phone,
@@ -289,7 +289,7 @@ impl Sender {
         &self.address
     }
 
-    pub fn get_postal_code(&self) -> u16 {
+    pub fn get_postal_code(&self) -> u32 {
         self.postal_code
     }
 
@@ -329,7 +329,7 @@ impl Sender {
         &mut self.address
     }
 
-    pub fn get_postal_code_mut(&mut self) -> &mut u16 {
+    pub fn get_postal_code_mut(&mut self) -> &mut u32 {
         &mut self.postal_code
     }
 

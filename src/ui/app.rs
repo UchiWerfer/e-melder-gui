@@ -360,7 +360,8 @@ impl EMelderApp {
         
         ui.horizontal(|ui| {
             ui.label(translate!("edit.postal_code"));
-            ui.add(egui::DragValue::new(self.club.get_sender_mut().get_postal_code_mut()));
+            ui.add(egui::DragValue::new(self.club.get_sender_mut().get_postal_code_mut())
+                .range(11000..=99999));
         });
         
         ui.horizontal(|ui| {
@@ -395,7 +396,11 @@ impl EMelderApp {
 
         ui.horizontal(|ui| {
             ui.label(translate!("edit.club_number"));
-            ui.add(egui::DragValue::new(self.club.get_number_mut()));
+            ui.add(egui::DragValue::new(self.club.get_number_mut())
+                .range(0..=9_999_999)
+                .custom_formatter(|n, _| {
+                    format!("{n:07}")
+                }));
         });
 
         ui.horizontal(|ui| {

@@ -49,7 +49,7 @@ pub fn read_club(path: impl AsRef<Path>) -> io::Result<Club> {
     let address = String::from(value.get("address").ok_or(io::Error::new(Other, "address not provided"))?
         .as_str().ok_or(io::Error::new(Other, "address not a string"))?);
     let postal_code = value.get("postal-code").ok_or(io::Error::new(Other, "postal code not provided"))?.as_u64()
-        .ok_or(io::Error::new(Other, "postal code not a number"))? as u16;
+        .ok_or(io::Error::new(Other, "postal code not a number"))? as u32;
     let town = String::from(value.get("town").ok_or(io::Error::new(Other, "town not provided"))?
         .as_str().ok_or(io::Error::new(Other, "town not a string"))?);
     let private = String::from(value.get("private").ok_or(io::Error::new(Other, "private phone number not provided"))?
