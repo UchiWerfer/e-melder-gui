@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::env;
+#[cfg(not(feature="unstable"))]
 use std::fs::create_dir_all;
 use std::fs::File;
 use std::io;

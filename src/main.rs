@@ -12,7 +12,9 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use utils::{get_config, get_config_dir, get_config_file, get_default_config, crash};
+#[cfg(not(feature="unstable"))]
+use utils::get_config;
+use utils::{get_config_dir, get_config_file, get_default_config, crash};
 #[cfg(not(feature="unstable"))]
 use utils::{update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
 
