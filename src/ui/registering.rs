@@ -139,7 +139,7 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        egui::ComboBox::from_id_source(index)
+                        egui::ComboBox::from_id_salt(index)
                         .selected_text(translate!(&format!("register.table.gender_category.{}", athlete.get_gender_category().render())))
                         .show_ui(ui, |ui| {
                             for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
