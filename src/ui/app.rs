@@ -8,9 +8,10 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::tournament_info::{Athlete, Belt, Club, GenderCategory,
     RegisteringAthlete, WeightCategory};
-use crate::utils::{check_update_available, crash, get_config, get_config_dir, read_athletes, read_club,
-    write_athletes, write_club, write_config, UpdateAvailability, CODE_LINK, LANG_NAMES,
-    LICENSE, LICENSE_LINK, VERSION, translate};
+use crate::utils::{check_update_available, crash, get_config, get_config_dir,
+    read_athletes, read_club, write_athletes, write_club, write_config,
+    UpdateAvailability, CODE_LINK, LANG_NAMES, LICENSE, LICENSE_LINK,
+    VERSION, translate};
 use super::registering::show_registering;
 
 #[derive(Default, Debug)]

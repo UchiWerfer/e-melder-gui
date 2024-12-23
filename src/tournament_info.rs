@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use chrono::NaiveDate;
-use serde_json::Map;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(rename_all="lowercase")]
 pub enum Belt {
     #[default]
     Kyu9,
@@ -192,12 +192,16 @@ impl WeightCategory {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Athlete {
+    #[serde(rename="given")]
     given_name: String,
+    #[serde(rename="sur")]
     sur_name: String,
     belt: Belt,
+    #[serde(skip)]
     weight_category: WeightCategory,
+    #[serde(rename="year")]
     birth_year: u16
 }
 
@@ -210,15 +214,6 @@ impl Athlete {
         // the official application renders athletes weirdly, but 
         // we have to render them accordingly
         format!(include_str!("athlete-format"), self.sur_name, self.given_name, self.belt.render(), self.weight_category.render(), self.birth_year)
-    }
-
-    pub fn serialise(&self) -> Value {
-        let mut map = Map::new();
-        map.insert(String::from("given"), Value::String(self.given_name.clone()));
-        map.insert(String::from("sur"), Value::String(self.sur_name.clone()));
-        map.insert(String::from("belt"), Value::String(self.belt.serialise()));
-        map.insert(String::from("year"), Value::Number(self.birth_year.into()));
-        Value::Object(map)
     }
 
     pub fn get_given_name(&self) -> &str {
@@ -242,15 +237,19 @@ impl Athlete {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Sender {
-    club_name: String,
+    #[serde(rename="given")]
     given_name: String,
+    #[serde(rename="sur")]
     sur_name: String,
     address: String,
+    #[serde(rename="postal-code")]
     postal_code: u32,
     town: String,
+    #[serde(rename="private")]
     private_phone: String,
+    #[serde(rename="public")]
     public_phone: String,
     fax: String,
     mobile: String,
@@ -258,63 +257,13 @@ pub struct Sender {
 }
 
 impl Sender {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(club_name: String, given_name: String, sur_name: String, address: String,
-            postal_code: u32, town: String, private_phone: String, public_phone: String,
-            fax: String, mobile: String, mail: String) -> Self {
-        Sender {
-            club_name, given_name, sur_name, address, postal_code, town, private_phone,
-            public_phone, fax, mobile, mail
-        } 
-    }
-
-    pub fn render(&self) -> String {
+    pub fn render(&self, club_name: &str) -> String {
         // the format here resembles toml, but is not toml
         format!(
             include_str!("sender-format"),
-            self.club_name, self.given_name, self.sur_name, self.address, self.postal_code, self.town, self.private_phone, self.public_phone,
+            club_name, self.given_name, self.sur_name, self.address, self.postal_code, self.town, self.private_phone, self.public_phone,
             self.fax, self.mobile, self.mail
         )
-    }
-
-    pub fn get_given_name(&self) -> &str {
-        &self.given_name
-    }
-
-    pub fn get_sur_name(&self) -> &str {
-        &self.sur_name
-    }
-
-    pub fn get_address(&self) -> &str {
-        &self.address
-    }
-
-    pub fn get_postal_code(&self) -> u32 {
-        self.postal_code
-    }
-
-    pub fn get_town(&self) -> &str {
-        &self.town
-    }
-
-    pub fn get_private_phone(&self) -> &str {
-        &self.private_phone
-    }
-
-    pub fn get_public_phone(&self) -> &str {
-        &self.public_phone
-    }
-
-    pub fn get_fax(&self) -> &str {
-        &self.fax
-    }
-
-    pub fn get_mobile(&self) -> &str {
-        &self.mobile
-    }
-
-    pub fn get_mail(&self) -> &str {
-        &self.mail
     }
 
     pub fn get_given_name_mut(&mut self) -> &mut String {
@@ -358,10 +307,13 @@ impl Sender {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Club {
+    #[serde(rename="club")]
     name: String,
+    #[serde(rename="club-number")]
     number: u64,
+    #[serde(flatten)]
     sender: Sender,
     county: String,
     region: String,
@@ -371,13 +323,6 @@ pub struct Club {
 }
 
 impl Club {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(club_name: String, club_number: u64, sender: Sender, county: String, region: String, state: String, group: String, nation: String) -> Self {
-        Club {
-            name: club_name, number: club_number, sender, county, region, state, group, nation
-        }
-    }
-
     pub fn render(&self) -> String {
         format!(
             include_str!("club-format"),
@@ -390,34 +335,6 @@ impl Club {
 
     pub fn get_name(&self) -> &str {
         &self.name
-    }
-
-    pub fn get_number(&self) -> u64 {
-        self.number
-    }
-
-    pub fn get_sender(&self) -> &Sender {
-        &self.sender
-    }
-
-    pub fn get_county(&self) -> &str {
-        &self.county
-    }
-
-    pub fn get_region(&self) -> &str {
-        &self.region
-    }
-
-    pub fn get_state(&self) -> &str {
-        &self.state
-    }
-
-    pub fn get_group(&self) -> &str {
-        &self.group
-    }
-
-    pub fn get_nation(&self) -> &str {
-        &self.nation
     }
 
     pub fn get_name_mut(&mut self) -> &mut String {
@@ -501,7 +418,7 @@ impl Tournament {
         // the formet here resembles toml, but is not toml, the date is in the usual German format
         format!(
             include_str!("tournament-format"),
-            self.club.sender.render(), self.name, self.date.format("%d.%m.%Y"), self.place,
+            self.club.sender.render(self.club.get_name()), self.name, self.date.format("%d.%m.%Y"), self.place,
             self.age_category, self.gender_category.render(), self.gender_category.render(), self.club.render(), render(&self.athletes), self.athletes.len()
         )
     }
