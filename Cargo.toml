@@ -1,6 +1,6 @@
 [package]
 name = "e-melder-gui"
-version = "3.2.1"
+version = "3.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,6 +20,7 @@ reqwest = { version = "0.12.2", features = ["blocking"] }
 rfd = "0.15.0"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.114"
+textdistance = "1.1.1"
 
 [features]
 debugging = []

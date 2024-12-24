@@ -197,7 +197,7 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
             });
         }).body(|mut body| {
             for athlete in &app.athletes {
-                if !format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()).contains(&app.registering.search) {
+                if !matches_query(&format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()), &app.registering.search) {
                     continue;
                 }
                 athletes_shown = true;
@@ -233,4 +233,10 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
     if !athletes_shown {
         ui.label(translate!("register.empty"));
     }
+}
+
+fn matches_query(base: &str, query: &str) -> bool {
+    // value for comparison was obtained by testing various values and choosing
+    // the values with the results that felt best
+    base.contains(query) || textdistance::nstr::jaro(base, query) >= 0.65
 }
