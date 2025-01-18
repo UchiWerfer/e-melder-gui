@@ -212,8 +212,8 @@ impl EMelderApp {
             .show_ui(ui, |ui| {
                 for belt in [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, Belt::Kyu5, Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1,
                 Belt::Dan1, Belt::Dan2, Belt::Dan3, Belt::Dan4, Belt::Dan5, Belt::Dan6, Belt::Dan7, Belt::Dan8, Belt::Dan9, Belt::Dan10] {
-                    ui.selectable_value(&mut self.adding.belt, belt, translate!(
-                        &format!("add.belt.{}", belt.serialise())));
+                    ui.selectable_value(&mut self.adding.belt, belt,
+                        translate!(&format!("add.belt.{}", belt.serialise())));
                 }
             });
         });

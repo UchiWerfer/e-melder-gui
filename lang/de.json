@@ -70,6 +70,8 @@
     "register.notification.ask": "Die Meldedateien wurden erfolgreich geschrieben. Ordner mit den Meldedateien öffnen?",
     "register.notification.yes": "Ja, Ordner öffnen.",
     "register.notification.no": "Nein, Ordner nicht öffnen",
+    "register.notification.io_error": "Es ist ein Fehler beim Schreiben der Meldedateien aufgetreten.",
+    "register.notification.invalid_weight_category": "Sie haben eine ungültige Gewichtsklasse eingegeben. Bitte geben Sie Gewichtsklassen nur mit \"+\" oder \"-\" und dann einer Zahl ein.",
     "config.lang": "Sprache",
     "config.dark_mode": "Dark Mode",
     "config.select_athletes_file": "Datei mit den Athleten (m/w/d):",
