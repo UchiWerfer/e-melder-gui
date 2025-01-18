@@ -7,6 +7,12 @@ use crate::tournament_info::{registering_athletes_to_tournaments, GenderCategory
 use crate::utils::{crash, get_config, write_tournaments, translate};
 use super::EMelderApp;
 
+enum Written {
+    Successful,
+    Error,
+    InvalidWeightCategory
+}
+
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn show_registering(app: &mut EMelderApp, ui: &mut Ui) {
     ui.horizontal(|ui| {
@@ -32,50 +38,82 @@ pub fn show_registering(app: &mut EMelderApp, ui: &mut Ui) {
         let written = if let Some(tournaments) = tournaments {
             match write_tournaments(&tournaments) {
                 Ok(()) => {
-                    true
+                    Written::Successful
                 }
                 Err(err) => {
                     log::warn!("failed to write tournaments, due to {err}");
-                    false
+                    Written::Error
                 }
             }
-        } else { false };
+        } else { Written::InvalidWeightCategory };
 
-        if written {
-            #[allow(clippy::single_match_else)]
-            let tournament_basedir = match get_config("tournament-basedir") {
-                Ok(tournament_basedir) => match tournament_basedir.as_str() {
-                    Some(tournament_basedir) => PathBuf::from(tournament_basedir),
-                    None => {
-                        log::error!("tournament-basedir-config is not a string");
+        match written {
+            Written::Successful => {
+                #[allow(clippy::single_match_else)]
+                let tournament_basedir = match get_config("tournament-basedir") {
+                    Ok(tournament_basedir) => match tournament_basedir.as_str() {
+                        Some(tournament_basedir) => PathBuf::from(tournament_basedir),
+                        None => {
+                            log::error!("tournament-basedir-config is not a string");
+                            crash()
+                        }
+                    },
+                    Err(err) => {
+                        log::error!("failed to get tournament-basedir-config, due to {err}");
                         crash()
                     }
-                },
-                Err(err) => {
-                    log::error!("failed to get tournament-basedir-config, due to {err}");
-                    crash()
-                }
-            };
+                };
 
-            #[cfg(all(target_family="unix", not(target_os="macos")))]
-            std::thread::spawn(|| {
-                let _ = notify_rust::Notification::new()
-                .summary(&translate!("application.title"))
-                .body(&translate!("register.notification.ask"))
-                .sound_name("dialog-question")
-                .action("yes", &translate!("register.notification.yes"))
-                .action("no", &translate!("register.notification.no"))
-                .show().map(|handle| {
-                    handle.wait_for_action(|action| {
-                        if action == "yes" {
-                            let _ = open::that_detached(tournament_basedir);
-                        }
+                #[cfg(all(target_family="unix", not(target_os="macos")))]
+                std::thread::spawn(|| {
+                    let _ = notify_rust::Notification::new()
+                    .summary(&translate!("application.title"))
+                    .body(&translate!("register.notification.ask"))
+                    .sound_name("dialog-question")
+                    .action("yes", &translate!("register.notification.yes"))
+                    .action("no", &translate!("register.notification.no"))
+                    .show().map(|handle| {
+                        handle.wait_for_action(|action| {
+                            if action == "yes" {
+                                let _ = open::that_detached(tournament_basedir);
+                            }
+                        });
                     });
                 });
-            });
 
-            #[cfg(any(not(target_family="unix"), target_os="macos"))]
-            let _ = open::that_detached(tournament_basedir);
+                #[cfg(any(not(target_family="unix"), target_os="macos"))]
+                let _ = open::that_detached(tournament_basedir);
+            }
+            Written::Error => {
+                std::thread::spawn(|| {
+                    #[cfg(all(target_family="unix", not(target_os="macos")))]
+                    let _ = notify_rust::Notification::new()
+                    .summary(&translate!("application.title"))
+                    .body(&translate!("register.notification.io_error"))
+                    .sound_name("dialog-error")
+                    .show().map(|handle| handle.wait_for_action(|_| {}));
+                    #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
+                    let _ = notify_rust::Notification::new()
+                    .summary(&translate!("application.title"))
+                    .body(&translate!("register.notification.io_error"))
+                    .show();
+                });
+            }
+            Written::InvalidWeightCategory => {
+                std::thread::spawn(|| {
+                    #[cfg(all(target_family="unix", not(target_os="macos")))]
+                    let _ = notify_rust::Notification::new()
+                    .summary(&translate!("application.title"))
+                    .body(&translate!("register.notification.invalid_weight_category"))
+                    .sound_name("dialog-error")
+                    .show().map(|handle| handle.wait_for_action(|_| {}));
+                    #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
+                    let _ = notify_rust::Notification::new()
+                    .summary(&translate!("application.title"))
+                    .body(&translate!("register.notification.invalid_weight_category"))
+                    .show();
+                });
+            }
         }
     }
 

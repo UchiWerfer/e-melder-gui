@@ -8,6 +8,7 @@ use std::io::ErrorKind::Other;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+use notify_rust::Timeout;
 use serde_json::Map;
 
 use crate::tournament_info::{Athlete, Club, Tournament};
@@ -25,6 +26,10 @@ pub static LICENSE: &str = "GNU GPL v2";
 pub static LICENSE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui/blob/master/LICENSE";
 pub static CODE_LINK: &str = "https://github.com/UchiWerfer/e-melder-gui";
 static API_LINK: &str = "https://api.github.com/repos/UchiWerfer/e-melder-gui/releases/latest";
+#[cfg(target_os="windows")]
+static ILLEGAL_CHARS: &str = "<>:\"/\\|?*\0";
+#[cfg(not(target_os="windows"))]
+static ILLEGAL_CHARS: &str = "/\0";
 
 pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
     let athletes_file = File::options().read(true).open(path)?;
@@ -54,6 +59,10 @@ fn write_tournament(path: impl AsRef<Path>, tournament: &Tournament) -> io::Resu
     let mut file = File::options().write(true).create(true).truncate(true).open(path)?;
     file.write_all(&string_to_iso_8859_1_bytes(&tournament.render()))?;
     Ok(())
+}
+
+fn replace_illegal_chars(s: &str) -> String {
+    s.replace(|c| ILLEGAL_CHARS.contains(c), "_")
 }
 
 #[cfg(target_os="linux")]
@@ -130,8 +139,8 @@ pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
         "tournament-basedir not a string"))?);
     
     for tournament in tournaments {
-        let path = tournament_base.join(format!("{}{} ({}).dm4", tournament.get_name(), tournament.get_age_category(),
-            tournament.get_gender_category().render()));
+        let path = tournament_base.join(format!("{}{} ({}).dm4", replace_illegal_chars(tournament.get_name()),
+            replace_illegal_chars(tournament.get_age_category()), tournament.get_gender_category().render()));
         write_tournament(path, tournament)?;
     }
 
@@ -231,12 +240,23 @@ pub fn write_language(language: &str, translations: &str) -> io::Result<()> {
 }
 
 pub fn crash() -> ! {
-    let _ = notify_rust::Notification::new()
-    .summary("E-Melder")
-    .body(&format!("An unrecoverable error occurred, please look into the logs to see what happened.\n{}{}",
-    "If you think this is a bug, please file a bug report at ", CODE_LINK))
-    .sound_name("dialog-error")
-    .show();
+    let _ = std::thread::spawn(|| {
+        #[cfg(all(target_family="unix", not(target_os="macos")))]
+        let _ = notify_rust::Notification::new()
+        .summary("E-Melder")
+        .body(&format!("An unrecoverable error occurred, please look into the logs to see what happened.\n{}{}",
+        "If you think this is a bug, please file a bug report at ", CODE_LINK))
+        .sound_name("dialog-error")
+        .timeout(Timeout::Never)
+        .show().map(|handle| handle.wait_for_action(|_| {}));
+        #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
+        let _ = notify_rust::Notification::new()
+        .summary("E-Melder")
+        .body(&format!("An unrecoverable error occurred, please look into the logs to see what happened.\n{}{}",
+        "If you think this is a bug, please file a bug report at ", CODE_LINK))
+        .timeout(Timeout::Never)
+        .show();
+    }).join();
     panic!()
 }
 
