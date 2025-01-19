@@ -370,8 +370,9 @@ impl Club {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
 pub enum GenderCategory {
+    #[default]
     Mixed,
     Male,
     Female

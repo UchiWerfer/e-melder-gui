@@ -12,11 +12,9 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-#[cfg(not(feature="unstable"))]
-use utils::get_config;
 use utils::{get_config_dir, get_config_file, get_default_config, crash};
 #[cfg(not(feature="unstable"))]
-use utils::{update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
+use utils::{get_configs, update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
 
 #[allow(clippy::too_many_lines)]
 fn main() -> Result<(), eframe::Error> {
@@ -134,6 +132,11 @@ fn main() -> Result<(), eframe::Error> {
         }
     };
 
+    #[cfg(not(feature="unstable"))]
+    let configs = get_configs().unwrap_or_else(|err| {
+        log::error!("failed to load configs, due to {err}");
+        crash();
+    });
     #[cfg(not(feature = "unstable"))]
     let lang_file = match get_config_dir() {
         Ok(lang_file) => lang_file,
@@ -141,13 +144,7 @@ fn main() -> Result<(), eframe::Error> {
             log::error!("failed to get config dir, due to {err}");
             crash();
         }
-    }.join("e-melder").join("lang").join(format!("{}.json", get_config("lang").unwrap_or_else(|err| {
-        log::error!("failed to get language, due to {err}");
-        crash();
-    }).as_str().unwrap_or_else(|| {
-        log::error!("language-config is not a string");
-        crash();
-    })));
+    }.join("e-melder").join("lang").join(format!("{}.json", configs.lang));
 
     #[cfg(not(feature = "unstable"))]
     if !lang_file.exists() {
@@ -167,14 +164,7 @@ fn main() -> Result<(), eframe::Error> {
             }
         };
 
-        let lang_value = get_config("lang").unwrap_or_else(|err| {
-            log::error!("failed to get lang-config, due to {err}");
-            crash();
-        });
-        let lang = lang_value.as_str().unwrap_or_else(|| {
-            log::error!("lang-config is not a string");
-            crash();
-        });
+        let lang = configs.lang.as_str();
         let translations = match lang {
             "de" => DEFAULT_TRANSLATIONS_DE,
             "en" => DEFAULT_TRANSLATIONS_EN,
@@ -198,7 +188,7 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
-    eframe::run_native(translate!("application.title").as_str(), options, Box::new(|cc| {
+    eframe::run_native(translate_raw!("application.title").as_str(), options, Box::new(|cc| {
         match ui::EMelderApp::new(cc) {
             Ok(app) => Ok(Box::new(app)),
             Err(err) => Err(Box::new(err))

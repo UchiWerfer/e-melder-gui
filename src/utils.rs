@@ -4,14 +4,16 @@ use std::env;
 use std::fs::create_dir_all;
 use std::fs::File;
 use std::io;
-use std::io::ErrorKind::Other;
-use std::io::{Read, Write};
+#[cfg(not(feature="unstable"))]
+use std::io::Read;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use notify_rust::Timeout;
 use serde_json::Map;
 
 use crate::tournament_info::{Athlete, Club, Tournament};
+use crate::ui::app::Config;
 
 #[cfg(not(feature = "unstable"))]
 pub static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
@@ -101,42 +103,16 @@ pub fn get_config_file() -> io::Result<PathBuf> {
     Ok(base_dir.join("e-melder/config.json"))
 }
 
-pub fn get_config(config: &str) -> io::Result<serde_json::Value> {
-    let config_file = get_config_file()?;
-    let mut file = File::options().read(true).open(config_file)?;
-    let mut s = String::new();
-    file.read_to_string(&mut s)?;
-    let parsed = serde_json::from_str::<serde_json::Value>(&s)?;
-    let configs = parsed.as_object().ok_or(
-        io::Error::new(Other, "could not read configs"))?;
-    let config_value = configs.get(config).ok_or(io::Error::new(Other, "did not find config"))?;
-    Ok(config_value.to_owned())
+pub fn translate_fn<'a>(translation_key: &str, translations: &'a HashMap<String, String>) -> Option<&'a str> {
+    translations.get(translation_key).map(String::as_str)
 }
 
-pub fn translate_fn(translation_key: &str) -> io::Result<String> {
-    let lang = String::from(get_config("lang")?.as_str().ok_or(
-        io::Error::new(Other, "lang-config not a string")
-    )?) + ".json";
-    let lang_file_name = get_config_dir()?.join("e-melder").join("lang").join(lang);
-    let mut lang_file = File::options().read(true).open(lang_file_name)?;
-    let mut s = String::new();
-    lang_file.read_to_string(&mut s)?;
-    let parsed: serde_json::Value = serde_json::from_str(&s)?;
-    let translations = parsed.as_object().ok_or(
-        io::Error::new(Other, "could not read configs"))?;
-    let translation = translations.get(translation_key);
-    Ok(String::from(translation.map_or(Ok(translation_key), |translation| {
-        translation.as_str().ok_or(io::Error::other("translation not a string"))
-    })?))
-}
-
-pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
+pub fn write_tournaments(tournaments: &[Tournament], configs: &Config) -> io::Result<()> {
     if tournaments.is_empty() {
         return Ok(());
     }
-    let tournament_base_value = get_config("tournament-basedir")?;
-    let tournament_base = PathBuf::from(tournament_base_value.as_str().ok_or(io::Error::new(Other,
-        "tournament-basedir not a string"))?);
+    let tournament_base_value = &configs.tournament_basedir;
+    let tournament_base = PathBuf::from(tournament_base_value);
     
     for tournament in tournaments {
         let path = tournament_base.join(format!("{}{} ({}).dm4", replace_illegal_chars(tournament.get_name()),
@@ -147,26 +123,41 @@ pub fn write_tournaments(tournaments: &[Tournament]) -> io::Result<()> {
     Ok(())
 }
 
-pub fn write_config(config: &str, value: serde_json::Value) -> io::Result<()> {
+pub fn write_configs(configs: &Config) -> io::Result<()> {
     let config_file = get_config_file()?;
-    let mut file_read = File::options().read(true).open(&config_file)?;
-    let mut s = String::new();
-    file_read.read_to_string(&mut s)?;
-    let mut parsed: serde_json::Value = serde_json::from_str(&s)?;
-    let configs = parsed.as_object_mut().ok_or(
-        io::Error::new(Other, "could not read configs"))?;
-    configs.insert(config.to_owned(), value);
-    drop(file_read);
-    let mut file_write = File::options().write(true).truncate(true).open(&config_file)?;
-    file_write.write_all(serde_json::to_string(&configs)?.as_bytes())
+    let file = File::options().write(true).truncate(true).open(&config_file)?;
+    serde_json::to_writer(file, configs).map_err(Into::into)
 }
 
 #[macro_export]
 macro_rules! translate {
+    ($translation_key:expr,$translations:expr) => {
+        {
+            match $crate::utils::translate_fn($translation_key,$translations) {
+                Some(translation) => translation.to_owned(),
+                None => {
+                    log::warn!("failed to get translation");
+                    $translation_key.to_owned()
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! translate_raw {
     ($translation_key:expr) => {
         {
-            match $crate::utils::translate_fn($translation_key) {
-                Ok(translation) => translation,
+            match $crate::utils::get_configs() {
+                Ok(configs) => {
+                    match $crate::utils::get_translations(&configs.lang) {
+                        Ok(translations) => $crate::utils::translate!($translation_key, &translations),
+                        Err(err) => {
+                            log::warn!("failed to get translation, due to {err}");
+                            $translation_key.to_owned()
+                        }
+                    }
+                },
                 Err(err) => {
                     log::warn!("failed to get translation, due to {err}");
                     $translation_key.to_owned()
@@ -177,6 +168,12 @@ macro_rules! translate {
 }
 
 pub use translate;
+
+pub fn get_configs() -> io::Result<Config> {
+    let config_file = get_config_file()?;
+    let file = File::options().read(true).open(config_file)?;
+    serde_json::from_reader(file).map_err(Into::into)
+}
 
 lazy_static::lazy_static! {
     pub static ref LANG_NAMES: HashMap<&'static str, &'static str> = {
@@ -305,7 +302,7 @@ pub fn update_translations() -> io::Result<()> {
         // x.y.z usually requires 5 bytes, one per '.' and one each for x, y and z.
         // 1 extra bytes in case of unexpectedly long versions
         let mut latest_version = String::with_capacity(6);
-        dbg!(latest_version_file.read_to_string(&mut latest_version)?);
+        latest_version_file.read_to_string(&mut latest_version)?;
         if latest_version != VERSION {
             dbg!(latest_version);
             let lang_dir = get_config_dir()?.join("e-melder/lang");
@@ -338,4 +335,10 @@ pub fn update_translations() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+pub fn get_translations(lang: &str) -> io::Result<HashMap<String, String>> {
+    let lang_file_name = get_config_dir()?.join("e-melder").join("lang").join(format!("{lang}.json"));
+    let lang_file = File::options().read(true).open(lang_file_name)?;
+    serde_json::from_reader(lang_file).map_err(Into::into)
 }

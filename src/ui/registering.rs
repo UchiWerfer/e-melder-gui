@@ -1,10 +1,8 @@
-use std::path::PathBuf;
-
 use egui::{TextWrapMode, Ui};
 use egui_extras::{Column, TableBuilder};
 
 use crate::tournament_info::{registering_athletes_to_tournaments, GenderCategory, RegisteringAthlete};
-use crate::utils::{crash, get_config, write_tournaments, translate};
+use crate::utils::{write_tournaments, translate};
 use super::EMelderApp;
 
 enum Written {
@@ -16,27 +14,27 @@ enum Written {
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn show_registering(app: &mut EMelderApp, ui: &mut Ui) {
     ui.horizontal(|ui| {
-        ui.label(translate!("register.name"));
+        ui.label(translate!("register.name", &app.translations));
         ui.text_edit_singleline(&mut app.registering.name);
     });
 
     ui.horizontal(|ui| {
-        ui.label(translate!("register.place"));
+        ui.label(translate!("register.place", &app.translations));
         ui.text_edit_singleline(&mut app.registering.place);
     });
 
     ui.horizontal(|ui| {
-        ui.label(translate!("register.date"));
+        ui.label(translate!("register.date", &app.translations));
         ui.add(egui_extras::DatePickerButton::new(&mut app.registering.date).format("%d.%m.%Y"));
     });
 
-    if ui.button(translate!("register.register")).clicked() {
+    if ui.button(translate!("register.register", &app.translations)).clicked() {
         let tournaments = registering_athletes_to_tournaments(
             &app.registering.athletes, &app.registering.name, app.registering.date,
             &app.registering.place, &app.club);
         
         let written = if let Some(tournaments) = tournaments {
-            match write_tournaments(&tournaments) {
+            match write_tournaments(&tournaments, &app.config) {
                 Ok(()) => {
                     Written::Successful
                 }
@@ -49,29 +47,17 @@ pub fn show_registering(app: &mut EMelderApp, ui: &mut Ui) {
 
         match written {
             Written::Successful => {
-                #[allow(clippy::single_match_else)]
-                let tournament_basedir = match get_config("tournament-basedir") {
-                    Ok(tournament_basedir) => match tournament_basedir.as_str() {
-                        Some(tournament_basedir) => PathBuf::from(tournament_basedir),
-                        None => {
-                            log::error!("tournament-basedir-config is not a string");
-                            crash()
-                        }
-                    },
-                    Err(err) => {
-                        log::error!("failed to get tournament-basedir-config, due to {err}");
-                        crash()
-                    }
-                };
-
+                let tournament_basedir = app.config.tournament_basedir.clone();
                 #[cfg(all(target_family="unix", not(target_os="macos")))]
-                std::thread::spawn(|| {
+                let translations = app.translations.clone();
+                #[cfg(all(target_family="unix", not(target_os="macos")))]
+                std::thread::spawn(move || {
                     let _ = notify_rust::Notification::new()
-                    .summary(&translate!("application.title"))
-                    .body(&translate!("register.notification.ask"))
+                    .summary(&translate!("application.title", &translations))
+                    .body(&translate!("register.notification.ask", &translations))
                     .sound_name("dialog-question")
-                    .action("yes", &translate!("register.notification.yes"))
-                    .action("no", &translate!("register.notification.no"))
+                    .action("yes", &translate!("register.notification.yes", &translations))
+                    .action("no", &translate!("register.notification.no", &translations))
                     .show().map(|handle| {
                         handle.wait_for_action(|action| {
                             if action == "yes" {
@@ -85,32 +71,34 @@ pub fn show_registering(app: &mut EMelderApp, ui: &mut Ui) {
                 let _ = open::that_detached(tournament_basedir);
             }
             Written::Error => {
-                std::thread::spawn(|| {
+                let translations = app.translations.clone();
+                std::thread::spawn(move || {
                     #[cfg(all(target_family="unix", not(target_os="macos")))]
                     let _ = notify_rust::Notification::new()
-                    .summary(&translate!("application.title"))
-                    .body(&translate!("register.notification.io_error"))
+                    .summary(&translate!("application.title", &translations))
+                    .body(&translate!("register.notification.io_error", &translations))
                     .sound_name("dialog-error")
                     .show().map(|handle| handle.wait_for_action(|_| {}));
                     #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
                     let _ = notify_rust::Notification::new()
-                    .summary(&translate!("application.title"))
-                    .body(&translate!("register.notification.io_error"))
+                    .summary(&translate!("application.title", &translations))
+                    .body(&translate!("register.notification.io_error", &translations))
                     .show();
                 });
             }
             Written::InvalidWeightCategory => {
-                std::thread::spawn(|| {
+                let translations = app.translations.clone();
+                std::thread::spawn(move || {
                     #[cfg(all(target_family="unix", not(target_os="macos")))]
                     let _ = notify_rust::Notification::new()
-                    .summary(&translate!("application.title"))
-                    .body(&translate!("register.notification.invalid_weight_category"))
+                    .summary(&translate!("application.title", &translations))
+                    .body(&translate!("register.notification.invalid_weight_category", &translations))
                     .sound_name("dialog-error")
                     .show().map(|handle| handle.wait_for_action(|_| {}));
                     #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
                     let _ = notify_rust::Notification::new()
-                    .summary(&translate!("application.title"))
-                    .body(&translate!("register.notification.invalid_weight_category"))
+                    .summary(&translate!("application.title", &translations))
+                    .body(&translate!("register.notification.invalid_weight_category", &translations))
                     .show();
                 });
             }
@@ -136,25 +124,25 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
 
         table.header(20.0, |mut header| {
             header.col(|ui| {
-                ui.strong(translate!("register.table.given_name"));
+                ui.strong(translate!("register.table.given_name", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.sur_name"));
+                ui.strong(translate!("register.table.sur_name", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.belt"));
+                ui.strong(translate!("register.table.belt", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.year"));
+                ui.strong(translate!("register.table.year", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.gender_category"));
+                ui.strong(translate!("register.table.gender_category", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.age_category"));
+                ui.strong(translate!("register.table.age_category", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.weight_category"));
+                ui.strong(translate!("register.table.weight_category", &app.translations));
             });
             header.col(|_ui| {});
         }).body(|mut body| {
@@ -170,7 +158,7 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise())));
+                        ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()), &app.translations));
                     });
                     row.col(|ui| {
                         ui.label(athlete.get_birth_year().to_string());
@@ -178,11 +166,11 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         egui::ComboBox::from_id_salt(index)
-                        .selected_text(translate!(&format!("register.table.gender_category.{}", athlete.get_gender_category().render())))
+                        .selected_text(translate!(&format!("register.table.gender_category.{}", athlete.get_gender_category().render()), &app.translations))
                         .show_ui(ui, |ui| {
                             for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
                                 ui.selectable_value(athlete.get_gender_category_mut(), gender_category,
-                                    translate!(&format!("register.table.gender_category.{}", gender_category.render())));
+                                    translate!(&format!("register.table.gender_category.{}", gender_category.render()), &app.translations));
                             }
                         });
                     });
@@ -194,7 +182,7 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        if ui.button(translate!("register.table.delete")).clicked() {
+                        if ui.button(translate!("register.table.delete", &app.translations)).clicked() {
                             to_delete = Some(index);
                         }
                     });
@@ -211,7 +199,7 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
 #[allow(clippy::too_many_lines)]
 fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
     ui.horizontal(|ui| {
-        ui.label(translate!("register.search"));
+        ui.label(translate!("register.search", &app.translations));
         ui.text_edit_singleline(&mut app.registering.search);
     });
 
@@ -222,16 +210,16 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
 
         table.header(20.0, |mut header| {
             header.col(|ui| {
-                ui.strong(translate!("register.table.given_name"));
+                ui.strong(translate!("register.table.given_name", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.sur_name"));
+                ui.strong(translate!("register.table.sur_name", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.belt"));
+                ui.strong(translate!("register.table.belt", &app.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("register.table.year"));
+                ui.strong(translate!("register.table.year", &app.translations));
             });
         }).body(|mut body| {
             for athlete in &app.athletes {
@@ -251,14 +239,14 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise())));
+                        ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()), &app.translations));
                     });
                     row.col(|ui| {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        if ui.button(translate!("register.table.add")).clicked() {
+                        if ui.button(translate!("register.table.add", &app.translations)).clicked() {
                             app.registering.athletes.push(RegisteringAthlete::from_athlete(athlete,
                                 app.config.default_gender_category));
                         }
@@ -269,7 +257,7 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
     });
 
     if !athletes_shown {
-        ui.label(translate!("register.empty"));
+        ui.label(translate!("register.empty", &app.translations));
     }
 }
 
