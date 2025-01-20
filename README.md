@@ -13,4 +13,4 @@ If you have set the option being the folder for the registering-files, you will 
 
 ## Updating
 1. Download the latest release for your platform (Windows or Linux) from the releases tab here on Github.
-2. Run the contained executable (for Windows the .exe-file).
+2. Use the contained executable (for Windows the .exe-file) from now on.
