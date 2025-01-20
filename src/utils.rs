@@ -304,7 +304,6 @@ pub fn update_translations() -> io::Result<()> {
         let mut latest_version = String::with_capacity(6);
         latest_version_file.read_to_string(&mut latest_version)?;
         if latest_version != VERSION {
-            dbg!(latest_version);
             let lang_dir = get_config_dir()?.join("e-melder/lang");
                     
             match create_dir_all(lang_dir) {
