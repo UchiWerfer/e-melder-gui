@@ -32,6 +32,10 @@ static API_LINK: &str = "https://api.github.com/repos/UchiWerfer/e-melder-gui/re
 static ILLEGAL_CHARS: &str = "<>:\"/\\|?*\0";
 #[cfg(not(target_os="windows"))]
 static ILLEGAL_CHARS: &str = "/\0";
+pub const DEFAULT_BIRTH_YEAR: u16 = 2010;
+pub const LOWER_BOUND_BIRTH_YEAR: u16 = 1900;
+pub const UPPER_BOUND_BIRTH_YEAR: u16 = 2100;
+pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1100.0, 600.0];
 
 pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
     let athletes_file = File::options().read(true).open(path)?;

@@ -12,8 +12,8 @@ use crate::tournament_info::{Athlete, Belt, Club, GenderCategory,
     RegisteringAthlete, WeightCategory};
 use crate::utils::{check_update_available, crash, get_configs, get_config_dir,
     read_athletes, read_club, write_athletes, write_club, write_configs,
-    get_translations, UpdateAvailability, CODE_LINK, LANG_NAMES, LICENSE,
-    LICENSE_LINK, VERSION, translate};
+    get_translations, UpdateAvailability, CODE_LINK, DEFAULT_BIRTH_YEAR, LANG_NAMES,
+    LICENSE, LICENSE_LINK, LOWER_BOUND_BIRTH_YEAR, UPPER_BOUND_BIRTH_YEAR, VERSION, translate};
 use super::registering::show_registering;
 
 #[derive(Default, Debug)]
@@ -60,7 +60,7 @@ impl Default for Adding {
             given_name: String::new(),
             sur_name: String::new(),
             belt: Belt::default(),
-            year: 2010
+            year: DEFAULT_BIRTH_YEAR
         }
     }
 }
@@ -183,7 +183,7 @@ impl EMelderApp {
         });
         ui.horizontal(|ui| {
             ui.label(translate!("add.year", &self.translations));
-            ui.add(egui::Slider::new(&mut self.adding.year, 1900..=2100));
+            ui.add(egui::Slider::new(&mut self.adding.year, LOWER_BOUND_BIRTH_YEAR..=UPPER_BOUND_BIRTH_YEAR));
         });
 
         if ui.button(translate!("add.commit", &self.translations)).clicked() {

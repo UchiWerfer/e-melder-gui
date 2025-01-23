@@ -12,7 +12,7 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use utils::{get_config_dir, get_config_file, get_default_config, crash};
+use utils::{crash, get_config_dir, get_config_file, get_default_config, DEFAULT_WINDOW_SIZE};
 #[cfg(not(feature="unstable"))]
 use utils::{get_configs, update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
 
@@ -182,7 +182,7 @@ fn main() -> Result<(), eframe::Error> {
     }
 
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([1100.0, 600.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size(DEFAULT_WINDOW_SIZE),
         renderer: eframe::Renderer::Wgpu,
 
         ..Default::default()
