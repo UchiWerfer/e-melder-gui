@@ -441,8 +441,8 @@ fn render(athletes: &[Athlete]) -> String {
     let mut ret = String::new();
     for (i, athlete) in athletes.iter().enumerate() {
         ret.push_str(&format!(
-            "{}=\"\"{}\",{}\"",
-            i + 1, 1, athlete.render()
+            "{}=\"\"1\",{}\"",
+            i + 1, athlete.render()
         ));
         if i < athletes.len() - 1 {
             ret.push('\n');
