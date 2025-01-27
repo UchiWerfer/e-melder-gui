@@ -67,7 +67,7 @@
     "register.table.gender_category.m": "male",
     "register.table.delete": "Remove",
     "register.table.add": "Add",
-    "register.table.empty": "NNo athletes to sign up",
+    "register.table.empty": "No athletes to sign up",
     "register.notification.ask": "Successfully wrote the singing-up files. Open their folder?",
     "register.notification.yes": "Yes, open folder.",
     "register.notification.no": "No, do not open folder.",
