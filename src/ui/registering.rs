@@ -111,7 +111,12 @@ pub fn show_registering(app: &mut EMelderApp, ui: &mut Ui) {
 
     ui.separator();
 
-    show_table_registering(app, ui);
+    if app.registering.athletes.is_empty() {
+        ui.label(translate!("register.table.empty", &app.translations));
+    }
+    else {
+        show_table_registering(app, ui);
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -257,7 +262,7 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
     });
 
     if !athletes_shown {
-        ui.label(translate!("register.empty", &app.translations));
+        ui.label(translate!("register.search.empty", &app.translations));
     }
 }
 
