@@ -183,7 +183,7 @@ impl EMelderApp {
         });
         ui.horizontal(|ui| {
             ui.label(translate!("add.year", &self.translations));
-            ui.add(egui::Slider::new(&mut self.adding.year, LOWER_BOUND_BIRTH_YEAR..=UPPER_BOUND_BIRTH_YEAR));
+            ui.add(egui::DragValue::new(&mut self.adding.year).range(LOWER_BOUND_BIRTH_YEAR..=UPPER_BOUND_BIRTH_YEAR));
         });
 
         if ui.button(translate!("add.commit", &self.translations)).clicked() {
