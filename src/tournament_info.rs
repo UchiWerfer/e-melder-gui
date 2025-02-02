@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use chrono::NaiveDate;
+use enum_map::Enum;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -202,12 +203,15 @@ pub struct Athlete {
     #[serde(skip)]
     weight_category: WeightCategory,
     #[serde(rename="year")]
-    birth_year: u16
+    birth_year: u16,
+    #[serde(default, serialize_with="crate::utils::serialize_gender_category",
+    deserialize_with="crate::utils::deserialize_gender_category")]
+    gender: GenderCategory
 }
 
 impl Athlete {
-    pub fn new(given_name: String, sur_name: String, birth_year: u16, belt: Belt, weight_category: WeightCategory) -> Self {
-        Self { given_name, sur_name, belt, weight_category, birth_year }
+    pub fn new(given_name: String, sur_name: String, birth_year: u16, belt: Belt, weight_category: WeightCategory, gender: GenderCategory) -> Self {
+        Self { given_name, sur_name, belt, weight_category, birth_year, gender }
     }
 
     pub fn render(&self) -> String {
@@ -234,6 +238,14 @@ impl Athlete {
 
     pub fn get_birth_year(&self) -> u16 {
         self.birth_year
+    }
+
+    pub fn get_gender(&self) -> GenderCategory {
+        self.gender
+    }
+
+    pub fn get_gender_mut(&mut self) -> &mut GenderCategory {
+        &mut self.gender
     }
 }
 
@@ -370,7 +382,7 @@ impl Club {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Default, Enum)]
 pub enum GenderCategory {
     #[default]
     Mixed,
@@ -459,20 +471,21 @@ pub struct RegisteringAthlete {
     weight_category: String,
     birth_year: u16,
     gender_category: GenderCategory,
+    gender: GenderCategory,
     age_category: String
 }
 
 impl RegisteringAthlete {
-    pub fn new(given_name: String, sur_name: String, belt: Belt, weight_category: String, birth_year: u16, gender_category: GenderCategory,
+    pub fn new(given_name: String, sur_name: String, belt: Belt, weight_category: String, birth_year: u16, gender: GenderCategory,
     age_category: String) -> Self {
         Self {
-            given_name, sur_name, belt, weight_category, birth_year, gender_category, age_category
+            given_name, sur_name, belt, weight_category, birth_year, gender_category: gender, gender, age_category
         }
     }
 
-    pub fn from_athlete(athlete: &Athlete, default_gender_category: GenderCategory) -> Self {
+    pub fn from_athlete(athlete: &Athlete) -> Self {
         Self::new(athlete.given_name.clone(), athlete.sur_name.clone(), athlete.belt,
-        athlete.weight_category.to_string(), athlete.birth_year, default_gender_category, String::new())
+        athlete.weight_category.to_string(), athlete.birth_year, athlete.gender, String::new())
     }
 
     pub fn get_given_name(&self) -> &str {
@@ -506,6 +519,10 @@ impl RegisteringAthlete {
     pub fn get_age_category_mut(&mut self) -> &mut String {
         &mut self.age_category
     }
+
+    pub fn get_gender(&self) -> GenderCategory {
+        self.gender
+    }
 }
 
 pub fn registering_athletes_to_tournaments(registering_athletes: &[RegisteringAthlete], name: &str, date: NaiveDate,
@@ -518,14 +535,14 @@ place: &str, club: &Club) -> Option<Vec<Tournament>> {
         if let Some(index) = index_opt {
             ret[*index].athletes.push(Athlete::new(registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(),
                 registering_athlete.birth_year, registering_athlete.belt,
-                WeightCategory::from_str(&registering_athlete.weight_category)?));
+                WeightCategory::from_str(&registering_athlete.weight_category)?, registering_athlete.gender_category));
         }
         else {
             ret.push(
                 Tournament::new(name.to_owned(), date, place.to_owned(), registering_athlete.age_category.clone(),
                 registering_athlete.gender_category, club.clone(), vec![Athlete::new(
                     registering_athlete.given_name.clone(), registering_athlete.sur_name.clone(), registering_athlete.birth_year,
-                    registering_athlete.belt, WeightCategory::from_str(&registering_athlete.weight_category)?
+                    registering_athlete.belt, WeightCategory::from_str(&registering_athlete.weight_category)?, registering_athlete.gender
                 )])
             );
             tournament_meta.insert((&registering_athlete.age_category, registering_athlete.gender_category), ret.len() - 1);

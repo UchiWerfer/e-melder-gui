@@ -10,9 +10,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use notify_rust::Timeout;
+use serde::Deserialize;
 use serde_json::Map;
 
-use crate::tournament_info::{Athlete, Club, Tournament};
+use crate::tournament_info::{Athlete, Club, GenderCategory, Tournament};
 use crate::ui::app::Config;
 
 #[cfg(not(feature = "unstable"))]
@@ -36,6 +37,13 @@ pub const DEFAULT_BIRTH_YEAR: u16 = 2010;
 pub const LOWER_BOUND_BIRTH_YEAR: u16 = 1900;
 pub const UPPER_BOUND_BIRTH_YEAR: u16 = 2100;
 pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1100.0, 600.0];
+lazy_static::lazy_static! {
+    pub static ref LEGAL_GENDER_CATEGORIES: enum_map::EnumMap<GenderCategory, &'static [GenderCategory]> = enum_map::enum_map! {
+        GenderCategory::Female => &[GenderCategory::Female, GenderCategory::Mixed],
+        GenderCategory::Male => &[GenderCategory::Male, GenderCategory::Mixed],
+        GenderCategory::Mixed => &[GenderCategory::Female, GenderCategory::Male, GenderCategory::Mixed] as &[_]
+    };
+}
 
 pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
     let athletes_file = File::options().read(true).open(path)?;
@@ -344,4 +352,15 @@ pub fn get_translations(lang: &str) -> io::Result<HashMap<String, String>> {
     let lang_file_name = get_config_dir()?.join("e-melder").join("lang").join(format!("{lang}.json"));
     let lang_file = File::options().read(true).open(lang_file_name)?;
     serde_json::from_reader(lang_file).map_err(Into::into)
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn serialize_gender_category<S>(gender_category: &GenderCategory, serializer: S) -> Result<S::Ok, S::Error>
+where S: serde::Serializer {
+    serializer.serialize_str(gender_category.render())
+}
+
+pub fn deserialize_gender_category<'de, D>(deserializer: D) -> Result<GenderCategory, D::Error>
+where D: serde::Deserializer<'de> {
+    GenderCategory::from_str(&String::deserialize(deserializer)?).ok_or(serde::de::Error::custom("Invalid Gender category"))
 }

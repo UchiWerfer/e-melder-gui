@@ -1,8 +1,8 @@
 use egui::{TextWrapMode, Ui};
 use egui_extras::{Column, TableBuilder};
 
-use crate::tournament_info::{registering_athletes_to_tournaments, GenderCategory, RegisteringAthlete};
-use crate::utils::{write_tournaments, translate};
+use crate::tournament_info::{registering_athletes_to_tournaments, RegisteringAthlete};
+use crate::utils::{LEGAL_GENDER_CATEGORIES, translate, write_tournaments};
 use super::EMelderApp;
 
 enum Written {
@@ -173,8 +173,8 @@ fn show_table_registering(app: &mut EMelderApp, ui: &mut Ui) {
                         egui::ComboBox::from_id_salt(index)
                         .selected_text(translate!(&format!("register.table.gender_category.{}", athlete.get_gender_category().render()), &app.translations))
                         .show_ui(ui, |ui| {
-                            for gender_category in [GenderCategory::Mixed, GenderCategory::Female, GenderCategory::Male] {
-                                ui.selectable_value(athlete.get_gender_category_mut(), gender_category,
+                            for gender_category in LEGAL_GENDER_CATEGORIES[athlete.get_gender()] {
+                                ui.selectable_value(athlete.get_gender_category_mut(), *gender_category,
                                     translate!(&format!("register.table.gender_category.{}", gender_category.render()), &app.translations));
                             }
                         });
@@ -210,7 +210,7 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
 
     let mut athletes_shown = false;
     ui.push_id("register.table.add", |ui| {
-        let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 4)
+        let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 5)
             .column(Column::auto().at_least(50.0)).max_scroll_height(100.0);
 
         table.header(20.0, |mut header| {
@@ -219,6 +219,9 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
             });
             header.col(|ui| {
                 ui.strong(translate!("register.table.sur_name", &app.translations));
+            });
+            header.col(|ui| {
+                ui.strong(translate!("register.table.gender", &app.translations));
             });
             header.col(|ui| {
                 ui.strong(translate!("register.table.belt", &app.translations));
@@ -244,6 +247,10 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
+                        ui.label(translate!(&format!("register.table.gender_category.{}", athlete.get_gender().render()), &app.translations));
+                    });
+                    row.col(|ui| {
+                        ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()), &app.translations));
                     });
                     row.col(|ui| {
@@ -252,8 +259,7 @@ fn show_table_registering_adding(app: &mut EMelderApp, ui: &mut Ui) {
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         if ui.button(translate!("register.table.add", &app.translations)).clicked() {
-                            app.registering.athletes.push(RegisteringAthlete::from_athlete(athlete,
-                                app.config.default_gender_category));
+                            app.registering.athletes.push(RegisteringAthlete::from_athlete(athlete));
                         }
                     });
                 });

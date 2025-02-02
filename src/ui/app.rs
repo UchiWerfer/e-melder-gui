@@ -22,7 +22,7 @@ enum Mode {
     Registering,
     Adding,
     Deleting,
-    Graduating,
+    EditAthlete,
     EditClub,
     Config,
     About
@@ -51,23 +51,23 @@ struct Adding {
     given_name: String,
     sur_name: String,
     belt: Belt,
-    year: u16
-}
-
-impl Default for Adding {
-    fn default() -> Self {
-        Self {
-            given_name: String::new(),
-            sur_name: String::new(),
-            belt: Belt::default(),
-            year: DEFAULT_BIRTH_YEAR
-        }
-    }
+    year: u16,
+    gender: GenderCategory
 }
 
 impl Adding {
-    fn clear(&mut self) {
-        *self = Self::default();
+    fn clear(&mut self, config: &Config) {
+        *self = Self::from_config(config);
+    }
+
+    fn from_config(config: &Config) -> Self {
+        Self {
+            given_name: String::default(),
+            sur_name: String::default(),
+            belt: Belt::default(),
+            year: DEFAULT_BIRTH_YEAR,
+            gender: config.default_gender_category
+        }
     }
 }
 
@@ -84,19 +84,9 @@ pub struct Config {
     pub tournament_basedir: PathBuf,
     #[serde(skip_serializing, skip_deserializing)]
     pub langs: Vec<String>,
-    #[serde(default, serialize_with="serialize_gender_category", deserialize_with="deserialize_gender_category", rename = "default-gender-category")]
+    #[serde(default, serialize_with="crate::utils::serialize_gender_category",
+    deserialize_with="crate::utils::deserialize_gender_category", rename = "default-gender-category")]
     pub default_gender_category: GenderCategory
-}
-
-#[allow(clippy::trivially_copy_pass_by_ref)]
-fn serialize_gender_category<S>(gender_category: &GenderCategory, serializer: S) -> Result<S::Ok, S::Error>
-where S: serde::Serializer {
-    serializer.serialize_str(gender_category.render())
-}
-
-fn deserialize_gender_category<'de, D>(deserializer: D) -> Result<GenderCategory, D::Error>
-where D: serde::Deserializer<'de> {
-    GenderCategory::from_str(&String::deserialize(deserializer)?).ok_or(serde::de::Error::custom("Invalid Gender category"))
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -154,8 +144,9 @@ impl EMelderApp {
         
         cc.egui_ctx.set_visuals(visuals);
         let lang_clone = configs.lang.clone();
+        let adding = Adding::from_config(&configs);
         Ok(Self {
-            athletes, club, registering: Registering::default(), adding: Adding::default(), mode: Mode::default(),
+            athletes, club, registering: Registering::default(), adding, mode: Mode::default(),
             config: configs, popup_open: false, update_check_text: None,
             translations: get_translations(&lang_clone)?
         })
@@ -185,13 +176,23 @@ impl EMelderApp {
             ui.label(translate!("add.year", &self.translations));
             ui.add(egui::DragValue::new(&mut self.adding.year).range(LOWER_BOUND_BIRTH_YEAR..=UPPER_BOUND_BIRTH_YEAR));
         });
+        ui.horizontal(|ui| {
+            egui::ComboBox::from_label(translate!("add.gender", &self.translations))
+            .selected_text(&translate!(&format!("register.table.gender_category.{}", self.adding.gender.render()), &self.translations))
+            .show_ui(ui, |ui| {
+                for gender in [GenderCategory::Female, GenderCategory::Male, GenderCategory::Mixed] {
+                    ui.selectable_value(&mut self.adding.gender, gender,
+                        translate!(&format!("register.table.gender_category.{}", gender.render()), &self.translations));
+                }
+            })
+        });
 
         if ui.button(translate!("add.commit", &self.translations)).clicked() {
             self.athletes.push(Athlete::new(
                 self.adding.given_name.clone(), self.adding.sur_name.clone(),
-                self.adding.year, self.adding.belt, WeightCategory::default()
+                self.adding.year, self.adding.belt, WeightCategory::default(), self.adding.gender
             ));
-            self.adding.clear();
+            self.adding.clear(&self.config);
             match write_athletes(&self.config.athletes_file, &self.athletes) {
                 Ok(()) => {},
                 Err(err) => {
@@ -203,9 +204,9 @@ impl EMelderApp {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn show_graduating(&mut self, ui: &mut Ui) {
+    fn show_edit_athlete(&mut self, ui: &mut Ui) {
         if self.athletes.is_empty() {
-            if ui.button(translate!("graduate.empty", &self.translations)).clicked() {
+            if ui.button(translate!("edit_athlete.empty", &self.translations)).clicked() {
                 self.mode = Mode::Adding;
             }
             return;
@@ -213,21 +214,25 @@ impl EMelderApp {
 
 
         let mut to_graduate = None;
+        let mut gender_to_change = None;
         let table = TableBuilder::new(ui)
-            .columns(Column::auto().at_least(100.0), 4).column(Column::auto().at_least(50.0));
+            .columns(Column::auto().at_least(100.0), 5).column(Column::auto().at_least(50.0));
 
         table.header(20.0, |mut header| {
             header.col(|ui| {
-                ui.strong(translate!("graduate.given_name", &self.translations));
+                ui.strong(translate!("edit_athlete.given_name", &self.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("graduate.sur_name", &self.translations));
+                ui.strong(translate!("edit_athlete.sur_name", &self.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("graduate.year", &self.translations));
+                ui.strong(translate!("edit_athlete.year", &self.translations));
             });
             header.col(|ui| {
-                ui.strong(translate!("graduate.belt", &self.translations));
+                ui.strong(translate!("edit_athlete.gender", &self.translations));
+            });
+            header.col(|ui| {
+                ui.strong(translate!("edit_athlete.belt", &self.translations));
             });
             header.col(|_ui| {});
         }).body(|mut body| {
@@ -245,12 +250,26 @@ impl EMelderApp {
                         ui.label(athlete.get_birth_year().to_string());
                     });
                     row.col(|ui| {
+                        egui::ComboBox::from_label(translate!("edit_athlete.table.gender", &self.translations))
+                        .selected_text(translate!(&format!("register.table.gender_category.{}", athlete.get_gender().render()), &self.translations))
+                        .show_ui(ui, |ui| {
+                            let mut current_gender = athlete.get_gender();
+                            for gender in [GenderCategory::Female, GenderCategory::Male, GenderCategory::Mixed] {
+                                ui.selectable_value(&mut current_gender, gender,
+                                translate!(&format!("register.table.gender_category.{}", gender.render()), &self.translations));
+                            }
+                            if athlete.get_gender() != current_gender {
+                                gender_to_change = Some((index, current_gender));
+                            }
+                        });
+                    });
+                    row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
                         ui.label(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()), &self.translations));
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        if ui.button(translate!("graduate.graduate", &self.translations)).clicked() {
+                        if ui.button(translate!("edit_athlete.graduate", &self.translations)).clicked() {
                             to_graduate = Some(index);
                         }
                     });
@@ -266,6 +285,16 @@ impl EMelderApp {
                 Ok(()) => {},
                 Err(err) => {
                     log::error!("failed to write athletes, due to {err}");
+                    crash();
+                }
+            }
+        }
+        if let Some((index, new_gender)) = gender_to_change {
+            *self.athletes[index].get_gender_mut() = new_gender;
+            match write_athletes(&self.config.athletes_file, &self.athletes) {
+                Ok(()) => {},
+                Err(err) => {
+                    log::error!("failed to write athhletes, due to {err}");
                     crash();
                 }
             }
@@ -383,7 +412,7 @@ impl EMelderApp {
         }
 
         let mut to_delete = None;
-        let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 4)
+        let table = TableBuilder::new(ui).columns(Column::auto().at_least(100.0), 5)
             .column(Column::auto().at_least(50.0));
 
         table.header(20.0, |mut header| {
@@ -395,6 +424,9 @@ impl EMelderApp {
             });
             header.col(|ui| {
                 ui.strong(translate!("delete.year", &self.translations));
+            });
+            header.col(|ui| {
+                ui.strong(translate!("delete.gender", &self.translations));
             });
             header.col(|ui| {
                 ui.strong(translate!("delete.belt", &self.translations));
@@ -413,6 +445,9 @@ impl EMelderApp {
                     });
                     row.col(|ui| {
                         ui.label(athlete.get_birth_year().to_string());
+                    });
+                    row.col(|ui| {
+                        ui.label(translate!(&format!("register.table.gender_category.{}", athlete.get_gender().render()), &self.translations));
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
@@ -601,8 +636,8 @@ impl eframe::App for EMelderApp {
                     self.mode = Mode::Adding;
                 }
 
-                if ui.button(translate!("application.graduate", &self.translations)).clicked() {
-                    self.mode = Mode::Graduating;
+                if ui.button(translate!("application.edit_athlete", &self.translations)).clicked() {
+                    self.mode = Mode::EditAthlete;
                 }
 
                 if ui.button(translate!("application.delete", &self.translations)).clicked() {
@@ -625,7 +660,7 @@ impl eframe::App for EMelderApp {
             match self.mode {
                 Mode::Registering => show_registering(self, ui),
                 Mode::Adding => self.show_adding(ui),
-                Mode::Graduating => self.show_graduating(ui),
+                Mode::EditAthlete => self.show_edit_athlete(ui),
                 Mode::EditClub => self.show_edit(ui),
                 Mode::Deleting => self.show_delete(ui),
                 Mode::Config => self.show_config(ui),
