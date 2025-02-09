@@ -83,7 +83,7 @@
     "config.club_file.file_picker": "Wählen Sie die Datei mit den Vereinsdaten aus",
     "config.select_tournament_basedir": "Ordner für die Meldedateien:",
     "config.tournament_basedir.file_picker": "Wählen Sie den Ordner für die Meldedateien aus",
-    "config.default_gender_category": "Standard-Einstellung für die Geschlechtsklasse",
+    "config.default_gender": "Standard-Einstellung für das Geschlecht für neu hinzugefügte Athleten (m/w/d)",
     "config.save": "Einstellungen speichern",
     "edit_athlete.given_name": "Vorname",
     "edit_athlete.sur_name": "Nachname",

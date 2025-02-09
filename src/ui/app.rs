@@ -534,7 +534,7 @@ impl EMelderApp {
             }
         });
 
-        egui::ComboBox::from_label(translate!("config.default_gender_category", &self.translations))
+        egui::ComboBox::from_label(translate!("config.default_gender", &self.translations))
         .selected_text(translate!(&format!("register.table.gender_category.{}", self.config.default_gender_category.render()),
         &self.translations))
         .show_ui(ui, |ui| {
