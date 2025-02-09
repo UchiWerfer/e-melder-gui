@@ -1,15 +1,15 @@
 [package]
 name = "e-melder-gui"
-version = "3.4.0"
+version = "3.4.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 chrono = "0.4.34"
-eframe = { version = "0.30.0", features = ["wgpu"] }
-egui = { version = "0.30.0", features = ["accesskit"] }
-egui_extras = { version = "0.30.0", features = ["chrono"] }
+eframe = { version = "0.31.0", features = ["wgpu"] }
+egui = { version = "0.31.0", features = ["accesskit"] }
+egui_extras = { version = "0.31.0", features = ["chrono"] }
 enum-map = "2.7.3"
 home = "0.5.9"
 lazy_static = "1.5.0"
