@@ -247,6 +247,14 @@ impl Athlete {
     pub fn get_gender_mut(&mut self) -> &mut GenderCategory {
         &mut self.gender
     }
+
+    pub fn get_given_name_mut(&mut self) -> &mut String {
+        &mut self.given_name
+    }
+
+    pub fn get_sur_name_mut(&mut self) -> &mut String {
+        &mut self.sur_name
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

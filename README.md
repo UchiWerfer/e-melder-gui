@@ -1,6 +1,6 @@
 # E-Melder-GUI
 ## What is E-Melder-GUI
-E-Melder-GUI is an alternative application to sign up athletes for competitions, if the organizer of an event uses the E-Melder software by DATASERVICE Software.
+E-Melder-GUI is an alternative application to sign up Judoka for competitions, if the organizer of an event uses the E-Melder software by DATASERVICE Software.
 It is designed to have a better UX than the official application and to be, different from the official application, FOSS.
 
 ## Installation

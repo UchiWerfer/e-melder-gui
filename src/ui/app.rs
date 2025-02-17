@@ -236,15 +236,15 @@ impl EMelderApp {
             });
             header.col(|_ui| {});
         }).body(|mut body| {
-            for (index, athlete) in self.athletes.iter().enumerate() {
+            for (index, athlete) in self.athletes.iter_mut().enumerate() {
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        ui.label(athlete.get_given_name());
+                        ui.text_edit_singleline(athlete.get_given_name_mut());
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        ui.label(athlete.get_sur_name());
+                        ui.text_edit_singleline(athlete.get_sur_name_mut());
                     });
                     row.col(|ui| {
                         ui.label(athlete.get_birth_year().to_string());
@@ -276,6 +276,16 @@ impl EMelderApp {
                 });
             }
         });
+
+        if ui.button(translate!("edit_athlete.save", &self.translations)).clicked() {
+            match write_athletes(&self.config.athletes_file, &self.athletes) {
+                Ok(()) => {},
+                Err(err) => {
+                    log::error!("failed to write athletes, due to {err}");
+                    crash();
+                }
+            }
+        }
 
         if let Some(index) = to_graduate {
             let belt = self.athletes[index].get_belt();
