@@ -133,6 +133,13 @@ impl Belt {
             Self::Dan10 => "dan10"
         })
     }
+
+    pub fn upgradable(self) -> bool {
+        match self {
+            Self::Dan10 => false,
+            _ => true
+        }
+    }
 }
 
 impl FromStr for Belt {

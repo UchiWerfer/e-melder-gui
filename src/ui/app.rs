@@ -269,8 +269,10 @@ impl EMelderApp {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
-                        if ui.button(translate!("edit_athlete.graduate", &self.translations)).clicked() {
-                            to_graduate = Some(index);
+                        if athlete.get_belt().upgradable() {
+                            if ui.button(translate!("edit_athlete.graduate", &self.translations)).clicked() {
+                                to_graduate = Some(index);
+                            }
                         }
                     });
                 });
