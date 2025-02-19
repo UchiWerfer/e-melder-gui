@@ -300,7 +300,7 @@ pub fn update_translations() -> io::Result<()> {
                 }
             }
             Err(err) => {
-                log::warn!("failed to create neccessary directories for lang-files, due to {err}");
+                log::warn!("failed to create necessary directories for lang-files, due to {err}");
                 return Ok(());
             }
         }
@@ -335,7 +335,7 @@ pub fn update_translations() -> io::Result<()> {
                     }
                 }
                 Err(err) => {
-                    log::warn!("failed to create neccessary directories for lang-files, due to {err}");
+                    log::warn!("failed to create necessary directories for lang-files, due to {err}");
                 }
             }
 

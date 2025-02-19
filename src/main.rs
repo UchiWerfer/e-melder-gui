@@ -55,7 +55,7 @@ fn main() -> Result<(), eframe::Error> {
             match create_dir_all(config_file_parent) {
                 Ok(()) => {}
                 Err(err) => {
-                    log::error!("failed to create neccessary directories for config-file, due to {err}");
+                    log::error!("failed to create necessary directories for config-file, due to {err}");
                     crash();
                 }
             }
@@ -111,14 +111,14 @@ fn main() -> Result<(), eframe::Error> {
                 }
             }
             Err(err) => {
-                log::warn!("failed to create neccessary directories for lang-files, due to {err}");
+                log::warn!("failed to create necessary directories for lang-files, due to {err}");
             }
         }
 
         match create_dir_all(tournament_basedir) {
             Ok(()) => {},
             Err(err) => {
-                log::warn!("failed to create neccessary directories for tournament-basedir, due to {err}");
+                log::warn!("failed to create necessary directories for tournament-basedir, due to {err}");
             }
         }
     }
@@ -151,7 +151,7 @@ fn main() -> Result<(), eframe::Error> {
         match create_dir_all(lang_file.parent().expect("unreachable")) {
             Ok(()) => {},
             Err(err) => {
-                log::error!("failed to create neccessary directories for lang-file, due to {err}");
+                log::error!("failed to create necessary directories for lang-file, due to {err}");
                 crash();
             }   
         }

@@ -106,32 +106,24 @@ pub struct EMelderApp {
 impl EMelderApp {
     pub fn new(cc: &CreationContext) -> io::Result<Self> {
         let mut configs = get_configs()?;
-        let athletes = match read_athletes(&configs.athletes_file) {
-            Ok(athletes) => athletes,
-            Err(err) => {
-                if err.kind() == io::ErrorKind::NotFound {
-                    // e.g. at initial run or for using an alternative athletes-file
-                    Vec::new()
-                }
-                else {
-                    log::warn!("failed to read athletes, due to {err}");
-                    Vec::new()
-                }
+        let athletes = read_athletes(&configs.athletes_file).unwrap_or_else(|err| {
+            if err.kind() == io::ErrorKind::NotFound {
+                // e.g. at initial run or for using an alternative athletes-file
+                Vec::new()
+            } else {
+                log::warn!("failed to read athletes, due to {err}");
+                Vec::new()
             }
-        };
-        let club = match read_club(&configs.club_file) {
-            Ok(club) => club,
-            Err(err) => {
-                if err.kind() == io::ErrorKind::NotFound {
-                    // e.g. at initial run or for using an alternative club-file
-                    Club::default()
-                }
-                else {
-                    log::warn!("failed to read club, due to {err}");
-                    Club::default()
-                }
+        });
+        let club = read_club(&configs.club_file).unwrap_or_else(|err| {
+            if err.kind() == io::ErrorKind::NotFound {
+                // e.g. at initial run or for using an alternative club-file
+                Club::default()
+            } else {
+                log::warn!("failed to read club, due to {err}");
+                Club::default()
             }
-        };
+        });
         let languages = std::fs::read_dir(get_config_dir()?.join("e-melder").join("lang"))?.map(|entry| {
             entry.unwrap_or_else(|err| {
                 log::error!("failed to read config-directory/e-melder/lang, due to {err}");
@@ -306,7 +298,7 @@ impl EMelderApp {
             match write_athletes(&self.config.athletes_file, &self.athletes) {
                 Ok(()) => {},
                 Err(err) => {
-                    log::error!("failed to write athhletes, due to {err}");
+                    log::error!("failed to write athletes, due to {err}");
                     crash();
                 }
             }
@@ -560,13 +552,10 @@ impl EMelderApp {
             match write_configs(&self.config) {
                 Ok(()) => {
                     self.translations.clear();
-                    self.translations = match get_translations(&self.config.lang) {
-                        Ok(translations) => translations,
-                        Err(err) => {
-                            log::warn!("failed to obtain translations, due to {err}");
-                            HashMap::new()
-                        }
-                    }
+                    self.translations = get_translations(&self.config.lang).unwrap_or_else(|err| {
+                        log::warn!("failed to obtain translations, due to {err}");
+                        HashMap::new()
+                    })
                 },
                 Err(err) => {
                     log::warn!("failed to write configs, due to {err}");

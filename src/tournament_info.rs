@@ -187,7 +187,7 @@ impl WeightCategory {
         } else {
             return None;
         };
-        let limit = s[1..(s.len())].parse().ok()?;
+        let limit = s[1..s.len()].parse().ok()?;
         Some(Self { kind, limit })
     }
 
@@ -407,7 +407,7 @@ pub enum GenderCategory {
 
 impl GenderCategory {
     pub fn render(self) -> &'static str {
-        // the official application uses German abreviations
+        // the official application uses German abbreviations
         match self {
             Self::Female => "w",
             Self::Male => "m",
@@ -443,7 +443,7 @@ impl Tournament {
     }
 
     pub fn render(&self) -> String {
-        // the formet here resembles toml, but is not toml, the date is in the usual German format
+        // the format here resembles toml, but is not toml, the date is in the usual German format
         format!(
             include_str!("tournament-format"),
             self.club.sender.render(self.club.get_name()), self.name, self.date.format("%d.%m.%Y"), self.place,
