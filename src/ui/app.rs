@@ -261,6 +261,7 @@ impl EMelderApp {
                     });
                     row.col(|ui| {
                         ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
+                        #[allow(clippy::collapsible_if)]
                         if athlete.get_belt().upgradable() {
                             if ui.button(translate!("edit_athlete.graduate", &self.translations)).clicked() {
                                 to_graduate = Some(index);
@@ -555,7 +556,7 @@ impl EMelderApp {
                     self.translations = get_translations(&self.config.lang).unwrap_or_else(|err| {
                         log::warn!("failed to obtain translations, due to {err}");
                         HashMap::new()
-                    })
+                    });
                 },
                 Err(err) => {
                     log::warn!("failed to write configs, due to {err}");

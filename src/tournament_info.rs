@@ -135,10 +135,7 @@ impl Belt {
     }
 
     pub fn upgradable(self) -> bool {
-        match self {
-            Self::Dan10 => false,
-            _ => true
-        }
+        !matches!(self, Self::Dan10)
     }
 }
 
