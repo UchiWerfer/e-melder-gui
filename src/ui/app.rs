@@ -621,7 +621,6 @@ impl eframe::App for EMelderApp {
                 std::thread::spawn(move || {
                     ctx.send_viewport_cmd(ViewportCommand::Close);
                 });
-                return;
             }
         });
 
