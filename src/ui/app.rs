@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use chrono::{Local, NaiveDate};
 use eframe::CreationContext;
-use egui::{TextWrapMode, Ui, Visuals};
+use egui::{TextWrapMode, Ui, ViewportCommand, Visuals};
 use egui_extras::{Column, TableBuilder};
 use serde::{Deserialize, Serialize};
 
@@ -614,6 +614,17 @@ impl EMelderApp {
 
 impl eframe::App for EMelderApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        ctx.input(|inp| {
+            if inp.key_pressed(egui::Key::Q) && inp.modifiers.command_only() {
+                let ctx = ctx.clone();
+                // calling this in the main-thread just freezes the app, see: https://github.com/emilk/egui/discussions/4103#discussioncomment-9225022
+                std::thread::spawn(move || {
+                    ctx.send_viewport_cmd(ViewportCommand::Close);
+                });
+                return;
+            }
+        });
+
         if !self.popup_open && self.update_check_text.is_some() {
             self.update_check_text = None;
         }
