@@ -112,7 +112,7 @@ pub fn get_config_dir() -> io::Result<PathBuf> {
     let app_data = env::var("APPDATA");
     if let Ok(path) = app_data {
         if path.is_empty() {
-            home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
+            home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))
         }
         else {
             Ok(PathBuf::from(path))
