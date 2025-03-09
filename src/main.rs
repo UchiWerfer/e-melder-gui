@@ -12,7 +12,7 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use utils::{crash, get_config_dir, get_config_file, get_default_config, DEFAULT_WINDOW_SIZE};
+use utils::{crash, get_config_dir, get_config_file, get_default_configs, DEFAULT_WINDOW_SIZE};
 #[cfg(not(feature="unstable"))]
 use utils::{get_configs, update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
 
@@ -69,7 +69,7 @@ fn main() -> Result<(), eframe::Error> {
             }
         };
 
-        let (default_configs, tournament_basedir) = match get_default_config() {
+        let (default_configs, tournament_basedir) = match get_default_configs() {
             Ok(default_configs) => default_configs,
             Err(err) => {
                 log::error!("failed to create default-configs, due to {err}");

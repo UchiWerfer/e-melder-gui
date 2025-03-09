@@ -44,6 +44,14 @@ lazy_static::lazy_static! {
         GenderCategory::Mixed => &[GenderCategory::Female, GenderCategory::Male, GenderCategory::Mixed] as &[_]
     };
 }
+lazy_static::lazy_static! {
+    pub static ref LANG_NAMES: HashMap<&'static str, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert("de", "Deutsch");
+        m.insert("en", "English");
+        m
+    };
+}
 
 pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
     let athletes_file = File::options().read(true).open(path)?;
@@ -103,7 +111,12 @@ pub fn get_config_dir() -> io::Result<PathBuf> {
     // try using %APPDATA%, use %HOME% instead
     let app_data = env::var("APPDATA");
     if let Ok(path) = app_data {
-        Ok(PathBuf::from(path))
+        if path.is_empty() {
+            home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))?
+        }
+        else {
+            Ok(PathBuf::from(path))
+        }
     }
     else {
         home::home_dir().ok_or(io::Error::new(io::ErrorKind::NotFound, "could not locate config directory"))
@@ -187,16 +200,7 @@ pub fn get_configs() -> io::Result<Config> {
     serde_json::from_reader(file).map_err(Into::into)
 }
 
-lazy_static::lazy_static! {
-    pub static ref LANG_NAMES: HashMap<&'static str, &'static str> = {
-        let mut m = HashMap::new();
-        m.insert("de", "Deutsch");
-        m.insert("en", "English");
-        m
-    };
-}
-
-pub fn get_default_config() -> io::Result<(String, PathBuf)> {
+pub fn get_default_configs() -> io::Result<(String, PathBuf)> {
     let athletes_file = get_config_dir()?.join("e-melder").join("athletes.json");
     let club_file = get_config_dir()?.join("e-melder").join("club.json");
     let tournament_basedir = home::home_dir().ok_or(io::Error::other("users does not have a home-directory"))?.join("e-melder");
