@@ -461,20 +461,6 @@ impl Tournament {
     }
 }
 
-fn render(athletes: &[Athlete]) -> String {
-    let mut ret = String::new();
-    for (i, athlete) in athletes.iter().enumerate() {
-        ret.push_str(&format!(
-            "{}=\"\"1\",{}\"",
-            i + 1, athlete.render()
-        ));
-        if i < athletes.len() - 1 {
-            ret.push('\n');
-        }
-    }
-    ret
-}
-
 #[derive(Debug)]
 pub struct RegisteringAthlete {
     given_name: String,
@@ -561,4 +547,18 @@ place: &str, club: &Club) -> Option<Vec<Tournament>> {
         }
     }
     Some(ret)
+}
+
+fn render(athletes: &[Athlete]) -> String {
+    let mut ret = String::new();
+    for (i, athlete) in athletes.iter().enumerate() {
+        ret.push_str(&format!(
+            "{}=\"\"1\",{}\"",
+            i + 1, athlete.render()
+        ));
+        if i < athletes.len() - 1 {
+            ret.push('\n');
+        }
+    }
+    ret
 }

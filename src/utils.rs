@@ -53,6 +53,60 @@ lazy_static::lazy_static! {
     };
 }
 
+#[macro_export]
+macro_rules! translate {
+    ($translation_key:expr,$translations:expr) => {
+        {
+            match $crate::utils::translate_fn($translation_key,$translations) {
+                Some(translation) => translation.to_owned(),
+                None => {
+                    log::warn!("failed to get translation");
+                    $translation_key.to_owned()
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! translate_raw {
+    ($translation_key:expr) => {
+        {
+            match $crate::utils::get_configs() {
+                Ok(configs) => {
+                    match $crate::utils::get_translations(&configs.lang) {
+                        Ok(translations) => $crate::utils::translate!($translation_key, &translations),
+                        Err(err) => {
+                            log::warn!("failed to get translation, due to {err}");
+                            $translation_key.to_owned()
+                        }
+                    }
+                },
+                Err(err) => {
+                    log::warn!("failed to get translation, due to {err}");
+                    $translation_key.to_owned()
+                }
+            }
+        }
+    };
+}
+
+pub use translate;
+
+#[derive(Debug)]
+pub enum UpdateAvailability {
+    UpdateAvailable,
+    NoUpdateAvailable,
+    RunningUnstable
+}
+
+impl From<bool> for UpdateAvailability {
+    fn from(value: bool) -> Self {
+        if value { Self::UpdateAvailable }
+        else { Self::NoUpdateAvailable }
+    }
+}
+
 pub fn read_athletes(path: impl AsRef<Path>) -> io::Result<Vec<Athlete>> {
     let athletes_file = File::options().read(true).open(path)?;
     Ok(serde_json::from_reader(athletes_file)?)
@@ -154,46 +208,6 @@ pub fn write_configs(configs: &Config) -> io::Result<()> {
     serde_json::to_writer(file, configs).map_err(Into::into)
 }
 
-#[macro_export]
-macro_rules! translate {
-    ($translation_key:expr,$translations:expr) => {
-        {
-            match $crate::utils::translate_fn($translation_key,$translations) {
-                Some(translation) => translation.to_owned(),
-                None => {
-                    log::warn!("failed to get translation");
-                    $translation_key.to_owned()
-                }
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! translate_raw {
-    ($translation_key:expr) => {
-        {
-            match $crate::utils::get_configs() {
-                Ok(configs) => {
-                    match $crate::utils::get_translations(&configs.lang) {
-                        Ok(translations) => $crate::utils::translate!($translation_key, &translations),
-                        Err(err) => {
-                            log::warn!("failed to get translation, due to {err}");
-                            $translation_key.to_owned()
-                        }
-                    }
-                },
-                Err(err) => {
-                    log::warn!("failed to get translation, due to {err}");
-                    $translation_key.to_owned()
-                }
-            }
-        }
-    };
-}
-
-pub use translate;
-
 pub fn get_configs() -> io::Result<Config> {
     let config_file = get_config_file()?;
     let file = File::options().read(true).open(config_file)?;
@@ -212,20 +226,6 @@ pub fn get_default_configs() -> io::Result<(String, PathBuf)> {
     default_config.insert(String::from("tournament-basedir"), tournament_basedir.to_str().expect("unreachable").into());
     default_config.insert(String::from("default-gender-category"), "g".into());
     Ok((serde_json::to_string(&default_config).expect("unreachable"), tournament_basedir))
-}
-
-#[derive(Debug)]
-pub enum UpdateAvailability {
-    UpdateAvailable,
-    NoUpdateAvailable,
-    RunningUnstable
-}
-
-impl From<bool> for UpdateAvailability {
-    fn from(value: bool) -> Self {
-        if value { Self::UpdateAvailable }
-        else { Self::NoUpdateAvailable }
-    }
 }
 
 pub fn check_update_available(current_version: &str) -> io::Result<UpdateAvailability> {
