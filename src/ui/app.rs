@@ -576,16 +576,12 @@ impl EMelderApp {
 
         ui.horizontal(|ui| {
             ui.label(translate!("about.license", &self.translations));
-            if ui.link(LICENSE).on_hover_text(LICENSE_LINK).clicked() {
-                let _ = open::that_detached(LICENSE_LINK);
-            }
+            ui.hyperlink_to(LICENSE, LICENSE_LINK);
         });
 
         ui.horizontal(|ui| {
             ui.label(translate!("about.source_code", &self.translations));
-            if ui.link(CODE_LINK).on_hover_text(CODE_LINK).clicked() {
-                let _ = open::that_detached(CODE_LINK);
-            }
+            ui.hyperlink(CODE_LINK);
         });
 
         if ui.button(translate!("about.check_update", &self.translations)).clicked() {
