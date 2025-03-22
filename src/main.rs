@@ -7,6 +7,7 @@ mod utils;
 use std::fs::{create_dir_all, File};
 use std::io::Write;
 
+use cosmic::Theme;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Logger, Root};
@@ -15,9 +16,11 @@ use log4rs::encode::pattern::PatternEncoder;
 use utils::{crash, get_config_dir, get_config_file, get_default_configs, DEFAULT_WINDOW_SIZE};
 #[cfg(not(feature="unstable"))]
 use utils::{get_configs, update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
+use crate::ui::EMelderApp;
+use crate::utils::{get_translations, read_athletes, read_club};
 
 #[allow(clippy::too_many_lines)]
-fn main() -> Result<(), eframe::Error> {
+fn main() -> cosmic::iced::Result {
     let stdout_logger = ConsoleAppender::builder().build();
     let file_logger = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{level} from {module} on {date(%a, %Y-%m-%d at %H:%M:%S%z)}: {message}\n")))
@@ -133,7 +136,7 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     #[cfg(not(feature="unstable"))]
-    let configs = get_configs().unwrap_or_else(|err| {
+    let mut configs = get_configs().unwrap_or_else(|err| {
         log::error!("failed to load configs, due to {err}");
         crash();
     });
@@ -180,18 +183,25 @@ fn main() -> Result<(), eframe::Error> {
             }
         }
     }
+    let languages = std::fs::read_dir(get_config_dir().unwrap().join("e-melder").join("lang")).unwrap().map(|entry| {
+        entry.unwrap_or_else(|err| {
+            log::error!("failed to read config-directory/e-melder/lang, due to {err}");
+            crash();
+        }).path().file_stem().expect("unreachable").to_str().expect("unreachable").to_owned()
+    }).collect();
+    configs.langs = languages;
+    let translations = get_translations(&configs.lang).unwrap();
+    let club = read_club(&configs.club_file).unwrap();
+    let athletes = read_athletes(&configs.athletes_file).unwrap();
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size(DEFAULT_WINDOW_SIZE),
-        renderer: eframe::Renderer::Wgpu,
-
-        ..Default::default()
-    };
-
-    eframe::run_native(translate_raw!("application.title").as_str(), options, Box::new(|cc| {
-        match ui::EMelderApp::new(cc) {
-            Ok(app) => Ok(Box::new(app)),
-            Err(err) => Err(Box::new(err))
-        }
-    }))
+    let settings = cosmic::app::settings::Settings::default()
+        .theme(
+            if configs.dark_mode {
+                Theme::dark()
+            }
+            else {
+                Theme::light()
+            }
+        );
+    cosmic::app::run::<EMelderApp>(settings, (configs, translations, club, athletes))
 }
