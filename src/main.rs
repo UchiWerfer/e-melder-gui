@@ -6,18 +6,17 @@ mod utils;
 
 use std::fs::{create_dir_all, File};
 use std::io::Write;
-
+use cosmic::iced::Size;
 use cosmic::Theme;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use utils::{crash, get_config_dir, get_config_file, get_default_configs, DEFAULT_WINDOW_SIZE};
+use utils::{crash, get_config_dir, get_config_file, get_default_configs, get_translations, read_athletes, read_club, DEFAULT_WINDOW_SIZE};
 #[cfg(not(feature="unstable"))]
 use utils::{get_configs, update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
-use crate::ui::EMelderApp;
-use crate::utils::{get_translations, read_athletes, read_club};
+use ui::EMelderApp;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> cosmic::iced::Result {
@@ -202,6 +201,7 @@ fn main() -> cosmic::iced::Result {
             else {
                 Theme::light()
             }
-        );
+        )
+        .size(Size::from(DEFAULT_WINDOW_SIZE));
     cosmic::app::run::<EMelderApp>(settings, (configs, translations, club, athletes))
 }

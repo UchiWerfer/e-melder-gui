@@ -11,10 +11,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::tournament_info::{Athlete, Belt, Club, GenderCategory,
     RegisteringAthlete, WeightCategory};
-use crate::utils::{check_update_available, crash, get_configs, get_config_dir,
-    read_athletes, read_club, write_athletes, write_club, write_configs,
-    get_translations, UpdateAvailability, CODE_LINK, DEFAULT_BIRTH_YEAR, LANG_NAMES,
-    LICENSE, LICENSE_LINK, LOWER_BOUND_BIRTH_YEAR, UPPER_BOUND_BIRTH_YEAR, VERSION, translate};
+use crate::utils::{check_update_available, crash, get_configs, get_config_dir, read_athletes,
+                   read_club, write_athletes, write_club, write_configs, get_translations,
+                   UpdateAvailability, CODE_LINK, DEFAULT_BIRTH_YEAR, LANG_NAMES, LICENSE_LINK,
+                   LOWER_BOUND_BIRTH_YEAR, UPPER_BOUND_BIRTH_YEAR, VERSION, translate};
 
 #[derive(Default, Debug)]
 enum Page {
@@ -99,13 +99,21 @@ pub struct EMelderApp {
     registering: Registering,
     adding: Adding,
     configs: Config,
-    //update_check_text: Option<String>,
+    pub(super) update_check_text: Option<String>,
     //popup_open: bool,
-    translations: HashMap<String, String>
+    pub(super) translations: HashMap<String, String>
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Message {
+    CheckUpdate,
+    License,
+    Code,
+    CheckUpdateClose
 }
 
 impl cosmic::Application for EMelderApp {
-    type Message = ();
+    type Message = Message;
     type Flags = (Config, HashMap<String, String>, Club, Vec<Athlete>);
     type Executor = cosmic::executor::Default;
 
@@ -161,7 +169,8 @@ impl cosmic::Application for EMelderApp {
             registering: Registering::default(),
             adding: Adding::from_config(&configs),
             configs,
-            translations
+            translations,
+            update_check_text: None
         };
         let command = app.set_window_title(translate!("application.title", &app.translations), Id::unique());
         (app, command)
@@ -182,5 +191,40 @@ impl cosmic::Application for EMelderApp {
         else {
             cosmic::widget::text(translate!("application.empty", &self.translations)).into()
         }
+    }
+
+    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+        match message {
+            Message::Code => {
+                let _ = open::that_detached(CODE_LINK);
+            }
+            Message::License => {
+                let _ = open::that_detached(LICENSE_LINK);
+            }
+            Message::CheckUpdate => {
+                let update_available = check_update_available(VERSION);
+                if let Ok(update_available) = update_available {
+                    match update_available {
+                        UpdateAvailability::UpdateAvailable => {
+                            self.update_check_text = Some(translate!("about.update_available", &self.translations));
+                        }
+                        UpdateAvailability::NoUpdateAvailable => {
+                            self.update_check_text = Some(translate!("about.no_update_available", &self.translations));
+                        }
+                        UpdateAvailability::RunningUnstable => {
+                            self.update_check_text = Some(translate!("about.running_unstable", &self.translations));
+                        }
+                    }
+                }
+                else {
+                    log::warn!("failed to get new version information from network: {}", update_available.unwrap_err());  // cannot panic as it was checked above for `Ok`
+                    self.update_check_text = Some(translate!("about.no_network", &self.translations));
+                }
+            }
+            Message::CheckUpdateClose => {
+                self.update_check_text = None;
+            }
+        }
+        Task::none()
     }
 }
