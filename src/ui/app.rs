@@ -11,10 +11,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::tournament_info::{Athlete, Belt, Club, GenderCategory,
     RegisteringAthlete, WeightCategory};
-use crate::utils::{check_update_available, crash, get_configs, get_config_dir, read_athletes,
-                   read_club, write_athletes, write_club, write_configs, get_translations,
-                   UpdateAvailability, CODE_LINK, DEFAULT_BIRTH_YEAR, LANG_NAMES, LICENSE_LINK,
-                   LOWER_BOUND_BIRTH_YEAR, UPPER_BOUND_BIRTH_YEAR, VERSION, translate};
+use crate::utils::{crash, get_configs, get_config_dir, read_athletes, read_club, write_athletes, write_club, write_configs, get_translations, CODE_LINK, DEFAULT_BIRTH_YEAR, LANG_NAMES, LICENSE_LINK, LOWER_BOUND_BIRTH_YEAR, UPPER_BOUND_BIRTH_YEAR, VERSION, translate, GENDER_CATEGORIES};
+use crate::ui::administrative::{EditClubMessage, ConfigMessage, AboutMessage};
+use crate::ui::usage::{RegisteringMessage, AddingMessage, EditAthleteMessage, DeletingMessage};
 
 #[derive(Default, Debug)]
 enum Page {
@@ -71,11 +70,11 @@ impl Adding {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     pub lang: String,
     #[serde(rename = "dark-mode")]
-    // TODO: use theme-enum with: Dark, White, System variants
+    // TODO: use `Theme`-enum with: `Dark`, `White`, `System` variants
     pub dark_mode: bool,
     #[serde(rename = "athletes-file")]
     pub athletes_file: PathBuf,
@@ -87,6 +86,7 @@ pub struct Config {
     pub langs: Vec<String>,
     #[serde(default, serialize_with="crate::utils::serialize_gender_category",
     deserialize_with="crate::utils::deserialize_gender_category", rename = "default-gender-category")]
+    // TODO: rename to `default_gender`
     pub default_gender_category: GenderCategory
 }
 
@@ -94,22 +94,30 @@ pub struct Config {
 pub struct EMelderApp {
     core: Core,
     nav: nav_bar::Model,
+    pub(super) update_check_text: Option<String>,
+    pub(super) config_lang_selection: usize,
+    pub(super) lang_names: Vec<String>,
+    pub(super) genders: Vec<String>,
+    pub(super) gender_selection: usize,
     athletes: Vec<Athlete>,
-    club: Club,
+    pub(super) club: Club,
     registering: Registering,
     adding: Adding,
-    configs: Config,
-    pub(super) update_check_text: Option<String>,
+    pub(super) configs: Config,
     //popup_open: bool,
     pub(super) translations: HashMap<String, String>
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Message {
-    CheckUpdate,
-    License,
-    Code,
-    CheckUpdateClose
+    About(AboutMessage),
+    Config(ConfigMessage),
+    EditClub(EditClubMessage),
+    Deleting(DeletingMessage),
+    EditAthlete(EditAthleteMessage),
+    Adding(AddingMessage),
+    Registering(RegisteringMessage),
+    Nop
 }
 
 impl cosmic::Application for EMelderApp {
@@ -161,9 +169,25 @@ impl cosmic::Application for EMelderApp {
         nav.insert()
             .text(translate!("application.about", &translations))
             .data(Page::About);
+        let config_lang_selection = configs.langs.iter().position(|lang_code| {
+            lang_code == &configs.lang
+        }).unwrap_or_default();
+       let lang_names = configs.langs.iter().map(|lang_code| {
+            LANG_NAMES.get(lang_code.as_str()).unwrap_or(&lang_code.as_str()).to_owned().to_owned()
+        }).collect();
+        let gender_category_selection = GENDER_CATEGORIES.iter().position(|gender| {
+            *gender == configs.default_gender_category
+        }).unwrap_or_default();
+        let gender_categories = GENDER_CATEGORIES.iter().map(|gender| {
+            translate!(&format!("register.table.gender_category.{}", gender.render()), &translations)
+        }).collect();
         let mut app = Self {
             core,
             nav,
+            config_lang_selection,
+            lang_names,
+            genders: gender_categories,
+            gender_selection: gender_category_selection,
             athletes,
             club,
             registering: Registering::default(),
@@ -195,36 +219,14 @@ impl cosmic::Application for EMelderApp {
 
     fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         match message {
-            Message::Code => {
-                let _ = open::that_detached(CODE_LINK);
-            }
-            Message::License => {
-                let _ = open::that_detached(LICENSE_LINK);
-            }
-            Message::CheckUpdate => {
-                let update_available = check_update_available(VERSION);
-                if let Ok(update_available) = update_available {
-                    match update_available {
-                        UpdateAvailability::UpdateAvailable => {
-                            self.update_check_text = Some(translate!("about.update_available", &self.translations));
-                        }
-                        UpdateAvailability::NoUpdateAvailable => {
-                            self.update_check_text = Some(translate!("about.no_update_available", &self.translations));
-                        }
-                        UpdateAvailability::RunningUnstable => {
-                            self.update_check_text = Some(translate!("about.running_unstable", &self.translations));
-                        }
-                    }
-                }
-                else {
-                    log::warn!("failed to get new version information from network: {}", update_available.unwrap_err());  // cannot panic as it was checked above for `Ok`
-                    self.update_check_text = Some(translate!("about.no_network", &self.translations));
-                }
-            }
-            Message::CheckUpdateClose => {
-                self.update_check_text = None;
-            }
+            Message::Registering(registering) => self.update_registering(registering),
+            Message::Adding(adding) => self.update_adding(adding),
+            Message::EditAthlete(edit_athlete) => self.update_edit_athlete(edit_athlete),
+            Message::Deleting(deleting) => self.update_deleting(deleting),
+            Message::EditClub(edit_club) => self.update_edit_club(edit_club),
+            Message::Config(config) => self.update_config(config),
+            Message::About(about) => self.update_about(about),
+            Message::Nop => Task::none()
         }
-        Task::none()
     }
 }

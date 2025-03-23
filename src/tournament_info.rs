@@ -290,6 +290,46 @@ impl Sender {
         )
     }
 
+    pub fn get_given_name(&self) -> &str {
+        &self.given_name
+    }
+
+    pub fn get_sur_name(&self) -> &str {
+        &self.sur_name
+    }
+
+    pub fn get_address(&self) -> &str {
+        &self.address
+    }
+
+    pub fn get_postal_code(&self) -> u32 {
+        self.postal_code
+    }
+
+    pub fn get_town(&self) -> &str {
+        &self.town
+    }
+
+    pub fn get_private_phone(&self) -> &str {
+        &self.private_phone
+    }
+
+    pub fn get_public_phone(&self) -> &str {
+        &self.public_phone
+    }
+
+    pub fn get_fax(&self) -> &str {
+        &self.fax
+    }
+
+    pub fn get_mobile(&self) -> &str {
+        &self.mobile
+    }
+
+    pub fn get_mail(&self) -> &str {
+        &self.mail
+    }
+
     pub fn get_given_name_mut(&mut self) -> &mut String {
         &mut self.given_name
     }
@@ -359,6 +399,34 @@ impl Club {
 
     pub fn get_name(&self) -> &str {
         &self.name
+    }
+
+    pub fn get_number(&self) -> u64 {
+        self.number
+    }
+
+    pub fn get_sender(&self) -> &Sender {
+        &self.sender
+    }
+
+    pub fn get_county(&self) -> &str {
+        &self.county
+    }
+
+    pub fn get_region(&self) -> &str {
+        &self.region
+    }
+
+    pub fn get_state(&self) -> &str {
+        &self.state
+    }
+
+    pub fn get_group(&self) -> &str {
+        &self.group
+    }
+
+    pub fn get_nation(&self) -> &str {
+        &self.nation
     }
 
     pub fn get_name_mut(&mut self) -> &mut String {

@@ -36,7 +36,8 @@ static ILLEGAL_CHARS: &str = "/\0";
 pub const DEFAULT_BIRTH_YEAR: u16 = 2010;
 pub const LOWER_BOUND_BIRTH_YEAR: u16 = 1900;
 pub const UPPER_BOUND_BIRTH_YEAR: u16 = 2100;
-pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1100.0, 600.0];
+pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1100.0, 700.0];
+pub const GENDER_CATEGORIES: [GenderCategory; 3] = [GenderCategory::Mixed, GenderCategory::Male, GenderCategory::Female];
 lazy_static::lazy_static! {
     pub static ref LEGAL_GENDER_CATEGORIES: enum_map::EnumMap<GenderCategory, &'static [GenderCategory]> = enum_map::enum_map! {
         GenderCategory::Female => &[GenderCategory::Female, GenderCategory::Mixed],
