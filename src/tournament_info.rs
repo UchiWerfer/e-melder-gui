@@ -197,7 +197,7 @@ impl WeightCategory {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Athlete {
     #[serde(rename="given")]
     given_name: String,

@@ -6,7 +6,7 @@ use cosmic::widget::tooltip::Position;
 use crate::translate;
 use crate::ui::app::Message;
 use crate::ui::EMelderApp;
-use crate::utils::{check_update_available, write_club, write_configs, UpdateAvailability, CODE_LINK, GENDER_CATEGORIES, LANG_NAMES, LEGAL_GENDER_CATEGORIES, LICENSE, LICENSE_LINK, VERSION};
+use crate::utils::{check_update_available, write_club, write_configs, UpdateAvailability, CODE_LINK, GENDERS, LANG_NAMES, LEGAL_GENDER_CATEGORIES, LICENSE, LICENSE_LINK, VERSION};
 
 #[derive(Clone, Debug)]
 pub enum EditClubMessage {
@@ -99,7 +99,7 @@ impl EMelderApp {
             .push(widget::row::with_capacity(2)
                 .push(widget::text(translate!("edit.mail", &self.translations)))
                 .push(widget::text_input("", self.club.get_sender().get_mail())
-                    .on_input(|input| Message::EditClub(EditClubMessage::Mobile(input)))))
+                    .on_input(|input| Message::EditClub(EditClubMessage::Mail(input)))))
             .push(widget::row::with_capacity(2)
                 .push(widget::text(translate!("edit.club_number", &self.translations)))
                 .push(widget::text_input("", format!("{:0>7}", self.club.get_number().to_string()))
@@ -272,7 +272,8 @@ impl EMelderApp {
             }
             ConfigMessage::GenderSelected(selection) => {
                 self.gender_selection = selection;
-                self.configs.default_gender_category = GENDER_CATEGORIES[selection];
+                self.adding_gender_selection = selection;
+                self.configs.default_gender_category = GENDERS[selection];
             }
             ConfigMessage::SaveConfig => {
                 let configs = self.configs.clone();

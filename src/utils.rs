@@ -13,7 +13,7 @@ use notify_rust::Timeout;
 use serde::Deserialize;
 use serde_json::Map;
 
-use crate::tournament_info::{Athlete, Club, GenderCategory, Tournament};
+use crate::tournament_info::{Athlete, Belt, Club, GenderCategory, Tournament};
 use crate::ui::app::Config;
 
 #[cfg(not(feature = "unstable"))]
@@ -34,10 +34,11 @@ static ILLEGAL_CHARS: &str = "<>:\"/\\|?*\0";
 #[cfg(not(target_os="windows"))]
 static ILLEGAL_CHARS: &str = "/\0";
 pub const DEFAULT_BIRTH_YEAR: u16 = 2010;
-pub const LOWER_BOUND_BIRTH_YEAR: u16 = 1900;
-pub const UPPER_BOUND_BIRTH_YEAR: u16 = 2100;
 pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1100.0, 700.0];
-pub const GENDER_CATEGORIES: [GenderCategory; 3] = [GenderCategory::Mixed, GenderCategory::Male, GenderCategory::Female];
+pub const GENDERS: [GenderCategory; 3] = [GenderCategory::Mixed, GenderCategory::Male, GenderCategory::Female];
+pub const BELTS: [Belt; 19] = [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, Belt::Kyu5,
+Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1, Belt::Dan1, Belt::Dan2, Belt::Dan3, Belt::Dan4,
+Belt::Dan5, Belt::Dan6, Belt::Dan7, Belt::Dan8, Belt::Dan9, Belt::Dan10];
 lazy_static::lazy_static! {
     pub static ref LEGAL_GENDER_CATEGORIES: enum_map::EnumMap<GenderCategory, &'static [GenderCategory]> = enum_map::enum_map! {
         GenderCategory::Female => &[GenderCategory::Female, GenderCategory::Mixed],

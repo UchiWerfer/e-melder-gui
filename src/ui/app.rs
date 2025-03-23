@@ -11,7 +11,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::tournament_info::{Athlete, Belt, Club, GenderCategory,
     RegisteringAthlete, WeightCategory};
-use crate::utils::{crash, get_configs, get_config_dir, read_athletes, read_club, write_athletes, write_club, write_configs, get_translations, CODE_LINK, DEFAULT_BIRTH_YEAR, LANG_NAMES, LICENSE_LINK, LOWER_BOUND_BIRTH_YEAR, UPPER_BOUND_BIRTH_YEAR, VERSION, translate, GENDER_CATEGORIES};
+use crate::utils::{crash, get_configs, get_config_dir, read_athletes, read_club, write_athletes,
+                   write_club, write_configs, get_translations, CODE_LINK, DEFAULT_BIRTH_YEAR,
+                   LANG_NAMES, LICENSE_LINK, VERSION, translate, GENDERS, BELTS};
 use crate::ui::administrative::{EditClubMessage, ConfigMessage, AboutMessage};
 use crate::ui::usage::{RegisteringMessage, AddingMessage, EditAthleteMessage, DeletingMessage};
 
@@ -46,27 +48,25 @@ impl Default for Registering {
 }
 
 #[derive(Debug)]
-struct Adding {
-    given_name: String,
-    sur_name: String,
-    belt: Belt,
-    year: u16,
-    gender: GenderCategory
+pub(super) struct Adding {
+    pub(super) given_name: String,
+    pub(super) sur_name: String,
+    pub(super) year: u16,
+}
+
+impl Default for Adding {
+    fn default() -> Self {
+        Self {
+            given_name: String::new(),
+            sur_name: String::new(),
+            year: DEFAULT_BIRTH_YEAR
+        }
+    }
 }
 
 impl Adding {
-    fn clear(&mut self, config: &Config) {
-        *self = Self::from_config(config);
-    }
-
-    fn from_config(config: &Config) -> Self {
-        Self {
-            given_name: String::default(),
-            sur_name: String::default(),
-            belt: Belt::default(),
-            year: DEFAULT_BIRTH_YEAR,
-            gender: config.default_gender_category
-        }
+    pub fn clear(&mut self) {
+        *self = Self::default();
     }
 }
 
@@ -99,12 +99,14 @@ pub struct EMelderApp {
     pub(super) lang_names: Vec<String>,
     pub(super) genders: Vec<String>,
     pub(super) gender_selection: usize,
-    athletes: Vec<Athlete>,
+    pub(super) belt_names: Vec<String>,
+    pub(super) belt_selection: usize,
+    pub(super) adding_gender_selection: usize,
+    pub(super) athletes: Vec<Athlete>,
     pub(super) club: Club,
     registering: Registering,
-    adding: Adding,
+    pub(super) adding: Adding,
     pub(super) configs: Config,
-    //popup_open: bool,
     pub(super) translations: HashMap<String, String>
 }
 
@@ -158,11 +160,11 @@ impl cosmic::Application for EMelderApp {
             .text(translate!("application.edit_athlete", &translations))
             .data(Page::EditAthlete);
         nav.insert()
-            .text(translate!("application.edit", &translations))
-            .data(Page::EditClub);
-        nav.insert()
             .text(translate!("application.delete", &translations))
             .data(Page::Deleting);
+        nav.insert()
+            .text(translate!("application.edit", &translations))
+            .data(Page::EditClub);
         nav.insert()
             .text(translate!("application.config", &translations))
             .data(Page::Config);
@@ -175,23 +177,29 @@ impl cosmic::Application for EMelderApp {
        let lang_names = configs.langs.iter().map(|lang_code| {
             LANG_NAMES.get(lang_code.as_str()).unwrap_or(&lang_code.as_str()).to_owned().to_owned()
         }).collect();
-        let gender_category_selection = GENDER_CATEGORIES.iter().position(|gender| {
+        let gender_selection = GENDERS.iter().position(|gender| {
             *gender == configs.default_gender_category
         }).unwrap_or_default();
-        let gender_categories = GENDER_CATEGORIES.iter().map(|gender| {
+        let genders = GENDERS.iter().map(|gender| {
             translate!(&format!("register.table.gender_category.{}", gender.render()), &translations)
+        }).collect();
+        let belt_names = BELTS.iter().map(|belt| {
+            translate!(&format!("add.belt.{}", belt.serialise()), &translations)
         }).collect();
         let mut app = Self {
             core,
             nav,
             config_lang_selection,
             lang_names,
-            genders: gender_categories,
-            gender_selection: gender_category_selection,
+            genders,
+            gender_selection,
+            belt_names,
+            belt_selection: 0,
+            adding_gender_selection: gender_selection,
             athletes,
             club,
             registering: Registering::default(),
-            adding: Adding::from_config(&configs),
+            adding: Adding::default(),
             configs,
             translations,
             update_check_text: None
