@@ -529,7 +529,7 @@ impl Tournament {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RegisteringAthlete {
     given_name: String,
     sur_name: String,
@@ -566,6 +566,10 @@ impl RegisteringAthlete {
         self.belt
     }
 
+    pub fn get_weight_category(&self) -> &str {
+        &self.weight_category
+    }
+
     pub fn get_weight_category_mut(&mut self) -> &mut String {
         &mut self.weight_category
     }
@@ -574,12 +578,16 @@ impl RegisteringAthlete {
         self.birth_year
     }
 
-    pub fn get_gender_category(&self) -> &GenderCategory {
-        &self.gender_category
+    pub fn get_gender_category(&self) -> GenderCategory {
+        self.gender_category
     }
 
     pub fn get_gender_category_mut(&mut self) -> &mut GenderCategory {
         &mut self.gender_category
+    }
+
+    pub fn get_age_category(&self) -> &str {
+        &self.age_category
     }
 
     pub fn get_age_category_mut(&mut self) -> &mut String {

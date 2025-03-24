@@ -1,19 +1,18 @@
 use std::collections::HashMap;
-use std::io;
 use std::path::PathBuf;
 
 use chrono::{Local, NaiveDate};
 use cosmic::app::Task;
 use cosmic::{ApplicationExt, Core, Element};
 use cosmic::iced::window::Id;
+use cosmic::widget::calendar::CalendarModel;
 use cosmic::widget::nav_bar;
+use enum_map::EnumMap;
 use serde::{Deserialize, Serialize};
 
-use crate::tournament_info::{Athlete, Belt, Club, GenderCategory,
-    RegisteringAthlete, WeightCategory};
-use crate::utils::{crash, get_configs, get_config_dir, read_athletes, read_club, write_athletes,
-                   write_club, write_configs, get_translations, CODE_LINK, DEFAULT_BIRTH_YEAR,
-                   LANG_NAMES, LICENSE_LINK, VERSION, translate, GENDERS, BELTS};
+use crate::tournament_info::{Athlete,Club, GenderCategory,
+    RegisteringAthlete};
+use crate::utils::{DEFAULT_BIRTH_YEAR, LANG_NAMES, translate, GENDERS, BELTS};
 use crate::ui::administrative::{EditClubMessage, ConfigMessage, AboutMessage};
 use crate::ui::usage::{RegisteringMessage, AddingMessage, EditAthleteMessage, DeletingMessage};
 
@@ -102,9 +101,12 @@ pub struct EMelderApp {
     pub(super) belt_names: Vec<String>,
     pub(super) belt_selection: usize,
     pub(super) adding_gender_selection: usize,
+    pub(super) calendar_model: CalendarModel,
+    pub(super) legal_gender_categories: EnumMap<GenderCategory, Vec<String>>,
+    pub(super) show_date: bool,
     pub(super) athletes: Vec<Athlete>,
     pub(super) club: Club,
-    registering: Registering,
+    pub(super) registering: Registering,
     pub(super) adding: Adding,
     pub(super) configs: Config,
     pub(super) translations: HashMap<String, String>
@@ -186,6 +188,16 @@ impl cosmic::Application for EMelderApp {
         let belt_names = BELTS.iter().map(|belt| {
             translate!(&format!("add.belt.{}", belt.serialise()), &translations)
         }).collect();
+        let calendar_model = CalendarModel::now();
+        let legal_gender_categories = enum_map::enum_map! {
+            GenderCategory::Female => vec![translate!("register.table.gender_category.w", &translations),
+            translate!("register.table.gender_category.g", &translations)],
+            GenderCategory::Male => vec![translate!("register.table.gender_category.m", &translations),
+            translate!("register.table.gender_category.g", &translations)],
+            GenderCategory::Mixed => vec![translate!("register.table.gender_category.w", &translations),
+            translate!("register.table.gender_category.m", &translations),
+            translate!("register.table.gender_category.g", &translations)]
+        };
         let mut app = Self {
             core,
             nav,
@@ -196,6 +208,9 @@ impl cosmic::Application for EMelderApp {
             belt_names,
             belt_selection: 0,
             adding_gender_selection: gender_selection,
+            calendar_model,
+            legal_gender_categories,
+            show_date: false,
             athletes,
             club,
             registering: Registering::default(),

@@ -6,7 +6,7 @@ use cosmic::widget::tooltip::Position;
 use crate::translate;
 use crate::ui::app::Message;
 use crate::ui::EMelderApp;
-use crate::utils::{check_update_available, write_club, write_configs, UpdateAvailability, CODE_LINK, GENDERS, LANG_NAMES, LEGAL_GENDER_CATEGORIES, LICENSE, LICENSE_LINK, VERSION};
+use crate::utils::{check_update_available, write_club, write_configs, UpdateAvailability, CODE_LINK, GENDERS, LICENSE, LICENSE_LINK, VERSION};
 
 #[derive(Clone, Debug)]
 pub enum EditClubMessage {
