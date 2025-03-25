@@ -108,6 +108,15 @@ impl EMelderApp {
                                     .on_press(Message::Registering(RegisteringMessage::Add(index))))
                                 .into()
                         }))
+                    .push_maybe(if self.athletes.iter().any(|athlete| matches_query(
+                        &format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()),
+                        &self.registering.search
+                    )) {
+                        None
+                    }
+                    else {
+                        Some(widget::text(translate!("register.search.empty", &self.translations)))
+                    })
                     .apply(widget::scrollable))
                     .max_height(Pixels(200.0))))
             .push(widget::divider::horizontal::default())
@@ -126,7 +135,7 @@ impl EMelderApp {
                     .push(widget::text::title4(translate!("register.table.age_category", &self.translations))
                         .width(Length::Fixed(150.0)))
                     .push(widget::text::title4(translate!("register.table.weight_category", &self.translations))
-                        .width(Length::Fixed(150.0))))
+                        .width(Length::Fixed(160.0))))
                 .extend(self.registering.athletes.iter().enumerate()
                     .map(|(index, athlete)| {
                         widget::row::with_capacity(8)
@@ -151,11 +160,17 @@ impl EMelderApp {
                                 .width(Length::Fixed(150.0)))
                             .push(widget::text_input("", athlete.get_weight_category())
                                 .on_input(move |input| Message::Registering(RegisteringMessage::WeightCategory(input, index)))
-                                .width(Length::Fixed(150.0)))
+                                .width(Length::Fixed(160.0)))
                             .push(widget::button::text(translate!("register.table.delete", &self.translations))
                                 .on_press(Message::Registering(RegisteringMessage::Delete(index))))
                             .into()
                     }))
+                .push_maybe(if self.registering.athletes.is_empty() {
+                    Some(widget::text(translate!("register.table.empty", &self.translations)))
+                }
+                else {
+                    None
+                })
                 .apply(widget::scrollable))
             .into()
     }
@@ -392,6 +407,12 @@ impl EMelderApp {
                     })
                     .into()
             }))
+            .push_maybe(if self.athletes.is_empty() {
+                Some(widget::text(translate!("edit_athlete.empty", &self.translations)))
+            }
+            else {
+                None
+            })
             .into()
     }
 
@@ -436,6 +457,12 @@ impl EMelderApp {
                         .on_press(Message::Deleting(index)))
                     .into()
             }))
+            .push_maybe(if self.athletes.is_empty() {
+                Some(widget::text(translate!("delete.empty", &self.translations)))
+            }
+            else {
+                None
+            })
             .into()
     }
 
