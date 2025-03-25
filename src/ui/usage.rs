@@ -2,7 +2,7 @@ use chrono::NaiveDate;
 use cosmic::{theme, widget, Application, Apply, Element};
 use cosmic::app::Task;
 use cosmic::iced::{Length, Pixels};
-
+use cosmic::iced::alignment::Vertical;
 use crate::tournament_info::{registering_athletes_to_tournaments, Athlete, RegisteringAthlete, WeightCategory};
 use crate::translate;
 use crate::ui::app::Message;
@@ -57,14 +57,17 @@ impl EMelderApp {
     pub fn view_registering(&self) -> Element<<Self as Application>::Message> {
         widget::column::with_capacity(9)
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::text(translate!("register.name", &self.translations)))
                 .push(widget::text_input("", &self.registering.name)
                     .on_input(|input| Message::Registering(RegisteringMessage::Name(input)))))
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::text(translate!("register.place", &self.translations)))
                 .push(widget::text_input("", &self.registering.place)
                     .on_input(|input| Message::Registering(RegisteringMessage::Place(input)))))
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::text(translate!("register.date", &self.translations)))
                 .push(widget::button::text(self.registering.date.format("%d.%m.%Y").to_string())
                     .on_press(Message::Registering(RegisteringMessage::ToggleDate))))
@@ -82,6 +85,7 @@ impl EMelderApp {
             .push(widget::divider::horizontal::heavy())
             .push(widget::column::with_capacity(2)
                 .push(widget::row::with_capacity(2)
+                    .align_y(Vertical::Center)
                     .push(widget::text(translate!("register.search", &self.translations)))
                     .push(widget::text_input::search_input("", &self.registering.search)
                         .on_input(|input| Message::Registering(RegisteringMessage::Search(input)))))
@@ -92,6 +96,7 @@ impl EMelderApp {
                         .enumerate()
                         .map(|(index, athlete)| {
                             widget::row::with_capacity(6)
+                                .align_y(Vertical::Center)
                                 .push(widget::text(athlete.get_given_name())
                                     .width(Length::Fixed(100.0)))
                                 .push(widget::text(athlete.get_sur_name())
@@ -122,6 +127,7 @@ impl EMelderApp {
             .push(widget::divider::horizontal::default())
             .push(widget::column::with_capacity(self.registering.athletes.len() + 1)
                 .push(widget::row::with_capacity(7)
+                    .align_y(Vertical::Center)
                     .push(widget::text::title4(translate!("register.table.given_name", &self.translations))
                         .width(Length::Fixed(120.0)))
                     .push(widget::text::title4(translate!("register.table.sur_name", &self.translations))
@@ -139,6 +145,7 @@ impl EMelderApp {
                 .extend(self.registering.athletes.iter().enumerate()
                     .map(|(index, athlete)| {
                         widget::row::with_capacity(8)
+                            .align_y(Vertical::Center)
                             .push(widget::text(athlete.get_given_name())
                                 .width(Length::Fixed(120.0)))
                             .push(widget::text(athlete.get_sur_name())
@@ -307,23 +314,28 @@ impl EMelderApp {
     pub fn view_adding(&self) -> Element<<Self as Application>::Message> {
         widget::column::with_capacity(6)
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::text(translate!("add.given_name", &self.translations)))
                 .push(widget::text_input("", &self.adding.given_name)
                     .on_input(|input| Message::Adding(AddingMessage::GivenName(input)))))
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::text(translate!("add.sur_name", &self.translations)))
                 .push(widget::text_input("", &self.adding.sur_name)
                     .on_input(|input| Message::Adding(AddingMessage::SurName(input)))))
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::dropdown(&self.belt_names,
                 Some(self.belt_selection),
                 |selection| Message::Adding(AddingMessage::BeltSelection(selection))))
                 .push(widget::text(translate!("add.belt", &self.translations))))
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::text(translate!("add.year", &self.translations)))
                 .push(widget::text_input("", self.adding.year.to_string())
                     .on_input(|input| Message::Adding(AddingMessage::BirthYear(input)))))
             .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
                 .push(widget::dropdown(&self.genders,
                 Some(self.adding_gender_selection),
                 |selection| Message::Adding(AddingMessage::GenderSelection(selection))))
@@ -382,6 +394,7 @@ impl EMelderApp {
         widget::column::with_capacity(self.athletes.len())
             .extend(self.athletes.iter().enumerate().map(|(index, athlete)| {
                 widget::row::with_capacity(5 + <bool as Into<usize>>::into(athlete.get_belt().upgradable()))
+                    .align_y(Vertical::Center)
                     .spacing(theme::active().cosmic().spacing.space_xs)
                     .push(widget::text_input("", athlete.get_given_name())
                         .on_input(move |input| Message::EditAthlete(EditAthleteMessage::GivenName(input, index)))
@@ -446,6 +459,7 @@ impl EMelderApp {
         widget::column::with_capacity(self.athletes.len())
             .extend(self.athletes.iter().enumerate().map(|(index, athlete)| {
                 widget::row::with_capacity(6)
+                    .align_y(Vertical::Center)
                     .push(widget::text(athlete.get_given_name()).width(Length::Fixed(100.0)))
                     .push(widget::text(athlete.get_sur_name()).width(Length::Fixed(100.0)))
                     .push(widget::text(athlete.get_birth_year().to_string()).width(Length::Fixed(40.0)))
