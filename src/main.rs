@@ -5,6 +5,7 @@ mod ui;
 mod utils;
 
 use std::fs::{create_dir_all, File};
+use std::io;
 use std::io::Write;
 
 use cosmic::iced::Size;
@@ -17,6 +18,7 @@ use utils::{crash, get_config_dir, get_config_file, get_configs, get_default_con
 #[cfg(not(feature="unstable"))]
 use utils::{update_translations, write_language, DEFAULT_TRANSLATIONS_DE, DEFAULT_TRANSLATIONS_EN};
 use ui::EMelderApp;
+use crate::tournament_info::Club;
 
 #[allow(clippy::too_many_lines)]
 fn main() -> cosmic::iced::Result {
@@ -181,21 +183,44 @@ fn main() -> cosmic::iced::Result {
             }
         }
     }
-    let languages = std::fs::read_dir(get_config_dir().unwrap().join("e-melder").join("lang")).unwrap().map(|entry| {
+
+    let languages = std::fs::read_dir(get_config_dir().expect("already used it, this should not panic")
+        .join("e-melder").join("lang")).unwrap_or_else(|err| {
+        log::error!("failed to read config-directory/e-melder/lang, due to {err}");
+        crash();
+    }).map(|entry| {
         entry.unwrap_or_else(|err| {
             log::error!("failed to read config-directory/e-melder/lang, due to {err}");
             crash();
         }).path().file_stem().expect("unreachable").to_str().expect("unreachable").to_owned()
     }).collect();
+
     configs.langs = languages;
-    let translations = get_translations(&configs.lang).unwrap();
-    let club = read_club(&configs.club_file).unwrap();
-    let athletes = read_athletes(&configs.athletes_file).unwrap();
+    let translations = get_translations(&configs.lang).unwrap_or_default();
+    let club = read_club(&configs.club_file).unwrap_or_else(|err| {
+        if err.kind() == io::ErrorKind::NotFound {
+            Club::default()
+        }
+        else {
+            log::warn!("failed to read club, due to {err}");
+            Club::default()
+        }
+    });
+    let athletes = read_athletes(&configs.athletes_file).unwrap_or_else(|err| {
+        if err.kind() == io::ErrorKind::NotFound {
+            Vec::new()
+        }
+        else {
+            log::warn!("failed to read athletes, due to {err}");
+            Vec::new()
+        }
+    });
 
     let settings = cosmic::app::settings::Settings::default()
         .theme(
             configs.theme.into()
         )
         .size(Size::from(DEFAULT_WINDOW_SIZE));
+
     cosmic::app::run::<EMelderApp>(settings, (configs, translations, club, athletes))
 }
