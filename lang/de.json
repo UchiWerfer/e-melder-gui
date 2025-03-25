@@ -55,7 +55,7 @@
     "register.place": "Veranstaltungsort:",
     "register.date": "Veranstaltungsdatum:",
     "register.register": "Melden",
-    "register.search": "Suche:",
+    "register.search": "",
     "register.search.empty": "Keine Judoka gefunden",
     "register.table.given_name": "Vorname",
     "register.table.sur_name": "Nachname",

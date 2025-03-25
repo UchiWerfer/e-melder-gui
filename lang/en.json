@@ -55,7 +55,7 @@
     "register.place": "Place of the competition:",
     "register.date": "Date of the competition:",
     "register.register": "Sign up",
-    "register.search": "Search:",
+    "register.search": "",
     "register.search.empty": "No Judoka found",
     "register.table.given_name": "Given name",
     "register.table.sur_name": "Surname",
