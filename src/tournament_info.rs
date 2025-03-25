@@ -208,8 +208,8 @@ pub struct Athlete {
     weight_category: WeightCategory,
     #[serde(rename="year")]
     birth_year: u16,
-    #[serde(default, serialize_with="crate::utils::serialize_gender_category",
-    deserialize_with="crate::utils::deserialize_gender_category")]
+    #[serde(default, serialize_with="crate::utils::serialize_gender",
+    deserialize_with="crate::utils::deserialize_gender")]
     gender: GenderCategory
 }
 

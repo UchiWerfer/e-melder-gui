@@ -4,7 +4,6 @@ use std::env;
 use std::fs::create_dir_all;
 use std::fs::File;
 use std::io;
-#[cfg(not(feature="unstable"))]
 use std::io::Read;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -14,7 +13,7 @@ use serde::Deserialize;
 use serde_json::Map;
 
 use crate::tournament_info::{Athlete, Belt, Club, GenderCategory, Tournament};
-use crate::ui::app::Config;
+use crate::ui::app::{Configs, OldConfigs, Theme};
 
 #[cfg(not(feature = "unstable"))]
 pub static DEFAULT_TRANSLATIONS_DE: &str = include_str!("../lang/de.json");
@@ -39,6 +38,7 @@ pub const GENDERS: [GenderCategory; 3] = [GenderCategory::Mixed, GenderCategory:
 pub const BELTS: [Belt; 19] = [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, Belt::Kyu5,
 Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1, Belt::Dan1, Belt::Dan2, Belt::Dan3, Belt::Dan4,
 Belt::Dan5, Belt::Dan6, Belt::Dan7, Belt::Dan8, Belt::Dan9, Belt::Dan10];
+pub const THEMES: [Theme; 3] = [Theme::System, Theme::Light, Theme::Dark];
 lazy_static::lazy_static! {
     pub static ref LEGAL_GENDER_CATEGORIES: enum_map::EnumMap<GenderCategory, &'static [GenderCategory]> = enum_map::enum_map! {
         GenderCategory::Female => &[GenderCategory::Female, GenderCategory::Mixed],
@@ -188,7 +188,7 @@ pub fn translate_fn<'a>(translation_key: &str, translations: &'a HashMap<String,
     translations.get(translation_key).map(String::as_str)
 }
 
-pub fn write_tournaments(tournaments: &[Tournament], configs: &Config) -> io::Result<()> {
+pub fn write_tournaments(tournaments: &[Tournament], configs: &Configs) -> io::Result<()> {
     if tournaments.is_empty() {
         return Ok(());
     }
@@ -204,16 +204,39 @@ pub fn write_tournaments(tournaments: &[Tournament], configs: &Config) -> io::Re
     Ok(())
 }
 
-pub fn write_configs(configs: &Config) -> io::Result<()> {
+pub fn write_configs(configs: &Configs) -> io::Result<()> {
     let config_file = get_config_file()?;
     let file = File::options().write(true).truncate(true).open(&config_file)?;
     serde_json::to_writer(file, configs).map_err(Into::into)
 }
 
-pub fn get_configs() -> io::Result<Config> {
+pub fn get_configs() -> io::Result<Configs> {
+    let latest_version_path = match get_config_dir() {
+        Ok(config_dir) => config_dir,
+        Err(err) => {
+            log::error!("failed to get config-directory, due to {err}");
+            crash();
+        }
+    }.join("e-melder/latest");
     let config_file = get_config_file()?;
     let file = File::options().read(true).open(config_file)?;
-    serde_json::from_reader(file).map_err(Into::into)
+    #[allow(clippy::if_not_else)]
+    if !latest_version_path.exists() {
+        let old_configs: OldConfigs = serde_json::from_reader(file)?;
+        Ok(old_configs.into())
+    }
+    else {
+        let mut latest_version_file = File::options().read(true).open(&latest_version_path)?;
+        let mut latest_version = String::with_capacity(6);
+        latest_version_file.read_to_string(&mut latest_version)?;
+        if latest_version.starts_with("1.") || latest_version.starts_with("2.") || latest_version.starts_with("3.") {
+            let old_configs: OldConfigs = serde_json::from_reader(file)?;
+            let mut latest_version_file = File::options().write(true).truncate(true).open(&latest_version_path)?;
+            latest_version_file.write_all(VERSION.as_bytes())?;
+            return Ok(old_configs.into());
+        }
+        serde_json::from_reader(file).map_err(Into::into)
+    }
 }
 
 pub fn get_default_configs() -> io::Result<(String, PathBuf)> {
@@ -222,11 +245,11 @@ pub fn get_default_configs() -> io::Result<(String, PathBuf)> {
     let tournament_basedir = home::home_dir().ok_or(io::Error::other("users does not have a home-directory"))?.join("e-melder");
     let mut default_config = Map::new();
     default_config.insert(String::from("lang"), "de".into());
-    default_config.insert(String::from("dark-mode"), false.into());
+    default_config.insert(String::from("theme"), "System".into());
     default_config.insert(String::from("club-file"), club_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("athletes-file"), athletes_file.to_str().expect("unreachable").into());
     default_config.insert(String::from("tournament-basedir"), tournament_basedir.to_str().expect("unreachable").into());
-    default_config.insert(String::from("default-gender-category"), "g".into());
+    default_config.insert(String::from("default-gender"), "g".into());
     Ok((serde_json::to_string(&default_config).expect("unreachable"), tournament_basedir))
 }
 
@@ -346,8 +369,6 @@ pub fn update_translations() -> io::Result<()> {
             }
 
             drop(latest_version_file);
-            let mut latest_version_file = File::options().write(true).truncate(true).open(&latest_version_path)?;
-            latest_version_file.write_all(VERSION.as_bytes())?;
         }
     }
 
@@ -361,12 +382,12 @@ pub fn get_translations(lang: &str) -> io::Result<HashMap<String, String>> {
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
-pub fn serialize_gender_category<S>(gender_category: &GenderCategory, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_gender<S>(gender_category: &GenderCategory, serializer: S) -> Result<S::Ok, S::Error>
 where S: serde::Serializer {
     serializer.serialize_str(gender_category.render())
 }
 
-pub fn deserialize_gender_category<'de, D>(deserializer: D) -> Result<GenderCategory, D::Error>
+pub fn deserialize_gender<'de, D>(deserializer: D) -> Result<GenderCategory, D::Error>
 where D: serde::Deserializer<'de> {
     GenderCategory::from_str(&String::deserialize(deserializer)?).ok_or(serde::de::Error::custom("Invalid Gender category"))
 }

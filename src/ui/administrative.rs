@@ -6,7 +6,7 @@ use cosmic::widget::tooltip::Position;
 use crate::translate;
 use crate::ui::app::Message;
 use crate::ui::EMelderApp;
-use crate::utils::{check_update_available, write_club, write_configs, UpdateAvailability, CODE_LINK, GENDERS, LICENSE, LICENSE_LINK, VERSION};
+use crate::utils::{check_update_available, write_club, write_configs, UpdateAvailability, CODE_LINK, GENDERS, LICENSE, LICENSE_LINK, THEMES, VERSION};
 
 #[derive(Clone, Debug)]
 pub enum EditClubMessage {
@@ -33,7 +33,6 @@ pub enum EditClubMessage {
 #[derive(Clone, Debug)]
 pub enum ConfigMessage {
     LanguageSelected(usize),
-    DarkMode(bool),
     SelectAthletesFile,
     SelectClubFile,
     SelectTournamentBasedir,
@@ -41,7 +40,8 @@ pub enum ConfigMessage {
     SaveConfig,
     SelectedAthletesFile(Option<PathBuf>),
     SelectedClubFile(Option<PathBuf>),
-    SelectedTournamentBasedir(Option<PathBuf>)
+    SelectedTournamentBasedir(Option<PathBuf>),
+    ThemeSelected(usize)
 }
 
 #[derive(Clone, Debug)]
@@ -215,9 +215,10 @@ impl EMelderApp {
                     |selection| Message::Config(ConfigMessage::LanguageSelected(selection))))
                     .push(widget::text(translate!("config.lang", &self.translations))))
                 .push(widget::row::with_capacity(2)
-                    .push(widget::text(translate!("config.dark_mode", &self.translations)))
-                    .push(widget::toggler(self.configs.dark_mode)
-                        .on_toggle(|dark_mode| Message::Config(ConfigMessage::DarkMode(dark_mode)))))
+                    .push(widget::text(translate!("config.theme", &self.translations)))
+                    .push(widget::dropdown(&self.themes,
+                    Some(self.theme_selection),
+                    |selection| Message::Config(ConfigMessage::ThemeSelected(selection)))))
                 .push(widget::row::with_capacity(2)
                     .push(widget::text(translate!("config.select_athletes_file", &self.translations)))
                     .push(widget::button::text(self.configs.athletes_file.display().to_string())
@@ -246,8 +247,9 @@ impl EMelderApp {
                 self.config_lang_selection = selection;
                 self.configs.lang = self.configs.langs[selection].clone();
             }
-            ConfigMessage::DarkMode(dark_mode) => {
-                self.configs.dark_mode = dark_mode;
+            ConfigMessage::ThemeSelected(selection) => {
+                self.theme_selection = selection;
+                self.configs.theme = THEMES[selection];
             }
             ConfigMessage::SelectAthletesFile => {
                 let translation = translate!("config.athletes_file.file_picker", &self.translations);
@@ -273,7 +275,7 @@ impl EMelderApp {
             ConfigMessage::GenderSelected(selection) => {
                 self.gender_selection = selection;
                 self.adding_gender_selection = selection;
-                self.configs.default_gender_category = GENDERS[selection];
+                self.configs.default_gender = GENDERS[selection];
             }
             ConfigMessage::SaveConfig => {
                 let configs = self.configs.clone();
