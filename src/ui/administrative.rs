@@ -215,10 +215,10 @@ impl EMelderApp {
                     |selection| Message::Config(ConfigMessage::LanguageSelected(selection))))
                     .push(widget::text(translate!("config.lang", &self.translations))))
                 .push(widget::row::with_capacity(2)
-                    .push(widget::text(translate!("config.theme", &self.translations)))
                     .push(widget::dropdown(&self.themes,
                     Some(self.theme_selection),
-                    |selection| Message::Config(ConfigMessage::ThemeSelected(selection)))))
+                    |selection| Message::Config(ConfigMessage::ThemeSelected(selection))))
+                    .push(widget::text(translate!("config.theme", &self.translations))))
                 .push(widget::row::with_capacity(2)
                     .push(widget::text(translate!("config.select_athletes_file", &self.translations)))
                     .push(widget::button::text(self.configs.athletes_file.display().to_string())
