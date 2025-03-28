@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter, Write};
 use std::str::FromStr;
 
 use chrono::NaiveDate;
@@ -154,6 +155,15 @@ pub enum WeightCategoryKind {
     Over
 }
 
+impl Display for WeightCategoryKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Over => f.write_char('+'),
+            Self::Under => f.write_char('-')
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct WeightCategory {
     kind: WeightCategoryKind,
@@ -163,6 +173,13 @@ pub struct WeightCategory {
 impl Default for WeightCategory {
     fn default() -> Self {
         Self { limit: 10, kind: WeightCategoryKind::default() }
+    }
+}
+
+impl Display for WeightCategory {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.kind.fmt(f)?;
+        self.limit.fmt(f)
     }
 }
 
@@ -186,14 +203,6 @@ impl WeightCategory {
         };
         let limit = s[1..s.len()].parse().ok()?;
         Some(Self { kind, limit })
-    }
-
-    #[allow(clippy::inherent_to_string)]
-    fn to_string(self) -> String {
-        match self.kind {
-            WeightCategoryKind::Under => format!("-{}", self.limit),
-            WeightCategoryKind::Over => format!("+{}", self.limit)
-        }
     }
 }
 
