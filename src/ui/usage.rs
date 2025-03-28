@@ -293,7 +293,11 @@ impl EMelderApp {
                 self.registering.athletes[index].get_age_category_mut().clone_from(&age_category);
             }
             RegisteringMessage::WeightCategory(weight_category, index) => {
-                self.registering.athletes[index].get_weight_category_mut().clone_from(&weight_category);
+                let trimmed = weight_category.replace(char::is_whitespace, "");
+                if trimmed.is_empty() || (trimmed.starts_with(['+', '-', '0', '1', '2', '3', '4',
+                    '5', '6', '7', '8', '9']) && trimmed.chars().skip(1).all(char::is_numeric)) {
+                    self.registering.athletes[index].get_weight_category_mut().clone_from(&weight_category);
+                }
             }
             RegisteringMessage::Delete(index) => {
                 self.registering.athletes.remove(index);
