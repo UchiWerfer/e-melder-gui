@@ -224,7 +224,6 @@ impl EMelderApp {
                         Written::Successful => {
                             let tournament_basedir = configs.tournament_basedir.clone();
                             #[cfg(all(target_family="unix", not(target_os="macos")))]
-                            #[cfg(all(target_family="unix", not(target_os="macos")))]
                             std::thread::spawn(move || {
                                 let _ = notify_rust::Notification::new()
                                     .summary(&translate!("application.title", &translations))
