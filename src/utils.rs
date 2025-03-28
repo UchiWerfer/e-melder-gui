@@ -223,7 +223,9 @@ pub fn get_configs() -> io::Result<Configs> {
     #[allow(clippy::if_not_else)]
     if !latest_version_path.exists() {
         let old_configs: OldConfigs = serde_json::from_reader(file)?;
-        Ok(old_configs.into())
+        let configs = old_configs.into();
+        write_configs(&configs)?;
+        Ok(configs)
     }
     else {
         let mut latest_version_file = File::options().read(true).open(&latest_version_path)?;
@@ -233,7 +235,9 @@ pub fn get_configs() -> io::Result<Configs> {
             let old_configs: OldConfigs = serde_json::from_reader(file)?;
             let mut latest_version_file = File::options().write(true).truncate(true).open(&latest_version_path)?;
             latest_version_file.write_all(VERSION.as_bytes())?;
-            return Ok(old_configs.into());
+            let configs = old_configs.into();
+            write_configs(&configs)?;
+            return Ok(configs);
         }
         serde_json::from_reader(file).map_err(Into::into)
     }

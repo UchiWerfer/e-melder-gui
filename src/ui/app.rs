@@ -112,7 +112,7 @@ pub struct Configs {
     pub tournament_basedir: PathBuf,
     #[serde(skip_serializing, skip_deserializing)]
     pub langs: Vec<String>,
-    #[serde(default, serialize_with="crate::utils::serialize_gender",
+    #[serde(serialize_with="crate::utils::serialize_gender",
     deserialize_with="crate::utils::deserialize_gender", rename = "default-gender")]
     pub default_gender: GenderCategory
 }
