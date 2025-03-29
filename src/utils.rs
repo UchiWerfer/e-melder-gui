@@ -12,7 +12,7 @@ use notify_rust::Timeout;
 use serde::Deserialize;
 use serde_json::Map;
 
-use crate::tournament_info::{Athlete, Belt, Club, GenderCategory, Tournament};
+use crate::tournament_info::{Athlete, Belt, Club, GenderCategory, Tournament, WeightCategory};
 use crate::ui::app::{Configs, OldConfigs, Theme};
 
 #[cfg(not(feature = "unstable"))]
@@ -394,4 +394,15 @@ where S: serde::Serializer {
 pub fn deserialize_gender<'de, D>(deserializer: D) -> Result<GenderCategory, D::Error>
 where D: serde::Deserializer<'de> {
     GenderCategory::from_str(&String::deserialize(deserializer)?).ok_or(serde::de::Error::custom("Invalid Gender category"))
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn serialize_weight_category<S>(weight_category: &WeightCategory, serializer: S) -> Result<S::Ok, S::Error>
+where S: serde::Serializer {
+    serializer.serialize_str(&weight_category.to_string())
+}
+
+pub fn deserialize_weight_category<'de, D>(deserializer: D) -> Result<WeightCategory, D::Error>
+where D: serde::Deserializer<'de> {
+    WeightCategory::from_str(&String::deserialize(deserializer)?).ok_or(serde::de::Error::custom("Invalid Weight category"))
 }

@@ -12,8 +12,7 @@ use cosmic::widget::nav_bar;
 use enum_map::EnumMap;
 use serde::{Deserialize, Serialize};
 
-use crate::tournament_info::{Athlete,Club, GenderCategory,
-    RegisteringAthlete};
+use crate::tournament_info::{Athlete, Club, GenderCategory, RegisteringAthlete, WeightCategory};
 use crate::utils::{DEFAULT_BIRTH_YEAR, LANG_NAMES, translate, GENDERS, BELTS, THEMES};
 use crate::ui::administrative::{EditClubMessage, ConfigMessage, AboutMessage};
 use crate::ui::usage::{RegisteringMessage, AddingMessage, EditAthleteMessage, DeletingMessage};
@@ -53,6 +52,7 @@ pub(super) struct Adding {
     pub(super) given_name: String,
     pub(super) sur_name: String,
     pub(super) year: u16,
+    pub(super) weight_category: String
 }
 
 impl Default for Adding {
@@ -60,7 +60,8 @@ impl Default for Adding {
         Self {
             given_name: String::new(),
             sur_name: String::new(),
-            year: DEFAULT_BIRTH_YEAR
+            year: DEFAULT_BIRTH_YEAR,
+            weight_category: WeightCategory::default().to_string()
         }
     }
 }
@@ -164,6 +165,7 @@ pub struct EMelderApp {
     pub(super) show_date: bool,
     pub(super) theme_selection: usize,
     pub(super) themes: Vec<String>,
+    pub(super) edit_athlete_weight_categories: Vec<String>,
     pub(super) athletes: Vec<Athlete>,
     pub(super) club: Club,
     pub(super) registering: Registering,
@@ -267,6 +269,9 @@ impl cosmic::Application for EMelderApp {
         let theme_selection = THEMES.iter().position(|theme| {
             *theme == configs.theme
         }).unwrap_or_default();
+        let edit_athlete_weight_categories = athletes.iter().map(|athlete| {
+            athlete.get_weight_category().to_string()
+        }).collect();
         let mut app = Self {
             core,
             nav,
@@ -282,6 +287,7 @@ impl cosmic::Application for EMelderApp {
             show_date: false,
             theme_selection,
             themes,
+            edit_athlete_weight_categories,
             athletes,
             club,
             registering: Registering::default(),

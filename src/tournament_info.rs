@@ -213,7 +213,8 @@ pub struct Athlete {
     #[serde(rename="sur")]
     sur_name: String,
     belt: Belt,
-    #[serde(skip)]
+    #[serde(default, serialize_with="crate::utils::serialize_weight_category",
+    deserialize_with="crate::utils::deserialize_weight_category")]
     weight_category: WeightCategory,
     #[serde(rename="year")]
     birth_year: u16,
@@ -241,8 +242,12 @@ impl Athlete {
         &self.sur_name
     }
 
-    pub fn get_belt(&self) -> &Belt {
-        &self.belt
+    pub fn get_belt(&self) -> Belt {
+        self.belt
+    }
+
+    pub fn get_weight_category(&self) -> WeightCategory {
+        self.weight_category
     }
 
     pub fn get_belt_mut(&mut self) -> &mut Belt {
@@ -267,6 +272,10 @@ impl Athlete {
 
     pub fn get_sur_name_mut(&mut self) -> &mut String {
         &mut self.sur_name
+    }
+
+    pub fn get_weight_category_mut(&mut self) -> &mut WeightCategory {
+        &mut self.weight_category
     }
 }
 

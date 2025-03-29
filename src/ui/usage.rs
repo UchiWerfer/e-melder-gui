@@ -3,6 +3,9 @@ use cosmic::{theme, widget, Application, Apply, Element};
 use cosmic::app::Task;
 use cosmic::iced::{Length, Pixels};
 use cosmic::iced::alignment::Vertical;
+use cosmic::widget::button::Builder;
+use cosmic::widget::Text;
+
 use crate::tournament_info::{registering_athletes_to_tournaments, Athlete, RegisteringAthlete, WeightCategory};
 use crate::translate;
 use crate::ui::app::Message;
@@ -33,6 +36,7 @@ pub enum AddingMessage {
     BeltSelection(usize),
     BirthYear(String),
     GenderSelection(usize),
+    WeightCategory(String),
     Add
 }
 
@@ -41,7 +45,9 @@ pub enum EditAthleteMessage {
     GivenName(String, usize),
     SurName(String, usize),
     Gender(usize, usize),
-    Graduate(usize)
+    Graduate(usize),
+    WeightCategory(String, usize),
+    Commit
 }
 
 pub type DeletingMessage = usize;
@@ -295,7 +301,7 @@ impl EMelderApp {
                 let trimmed = weight_category.replace(char::is_whitespace, "");
                 if trimmed.is_empty() || (trimmed.starts_with(['+', '-', '0', '1', '2', '3', '4',
                     '5', '6', '7', '8', '9']) && trimmed.chars().skip(1).all(char::is_numeric)) {
-                    self.registering.athletes[index].get_weight_category_mut().clone_from(&weight_category);
+                    self.registering.athletes[index].get_weight_category_mut().clone_from(&trimmed);
                 }
             }
             RegisteringMessage::Delete(index) => {
@@ -315,7 +321,7 @@ impl EMelderApp {
     }
 
     pub fn view_adding(&self) -> Element<<Self as Application>::Message> {
-        widget::column::with_capacity(6)
+        widget::column::with_capacity(7)
             .push(widget::row::with_capacity(2)
                 .align_y(Vertical::Center)
                 .push(widget::text(translate!("add.given_name", &self.translations)))
@@ -343,6 +349,11 @@ impl EMelderApp {
                 Some(self.adding_gender_selection),
                 |selection| Message::Adding(AddingMessage::GenderSelection(selection))))
                 .push(widget::text(translate!("add.gender", &self.translations))))
+            .push(widget::row::with_capacity(2)
+                .align_y(Vertical::Center)
+                .push(widget::text(translate!("add.weight_category", &self.translations)))
+                .push(widget::text_input("", &self.adding.weight_category)
+                    .on_input(|input| Message::Adding(AddingMessage::WeightCategory(input)))))
             .push(widget::button::text(translate!("add.commit", &self.translations))
                 .on_press(Message::Adding(AddingMessage::Add)))
             .into()
@@ -370,13 +381,24 @@ impl EMelderApp {
             AddingMessage::GenderSelection(selection) => {
                 self.adding_gender_selection = selection;
             }
+            AddingMessage::WeightCategory(weight_category) => {
+                let trimmed = weight_category.replace(char::is_whitespace, "");
+                if trimmed.is_empty() || (trimmed.starts_with(['+', '-', '0', '1', '2', '3', '4',
+                '5', '6', '7', '8', '9']) && trimmed.chars().skip(1).all(char::is_numeric)) {
+                    self.adding.weight_category = trimmed;
+                }
+            }
             AddingMessage::Add => {
                 let belt = BELTS[self.belt_selection];
                 let gender = GENDERS[self.adding_gender_selection];
+                let Some(weight_category) = WeightCategory::from_str(&self.adding.weight_category) else {
+                    return Task::none();
+                };
                 self.athletes.push(Athlete::new(
                     self.adding.given_name.clone(), self.adding.sur_name.clone(),
-                    self.adding.year, belt, WeightCategory::default(), gender
+                    self.adding.year, belt, weight_category, gender
                 ));
+                self.edit_athlete_weight_categories.push(weight_category.to_string());
                 self.adding.clear();
                 self.adding_gender_selection = self.gender_selection;
                 self.belt_selection = 0;
@@ -394,9 +416,9 @@ impl EMelderApp {
     }
 
     pub fn view_edit_athlete(&self) -> Element<<Self as Application>::Message> {
-        widget::column::with_capacity(self.athletes.len())
+        widget::column::with_capacity(self.athletes.len() + 1)
             .extend(self.athletes.iter().enumerate().map(|(index, athlete)| {
-                widget::row::with_capacity(5 + <bool as Into<usize>>::into(athlete.get_belt().upgradable()))
+                widget::row::with_capacity(6 + <bool as Into<usize>>::into(athlete.get_belt().upgradable()))
                     .align_y(Vertical::Center)
                     .spacing(theme::active().cosmic().spacing.space_xs)
                     .push(widget::text_input("", athlete.get_given_name())
@@ -412,6 +434,9 @@ impl EMelderApp {
                     }),
                     move |selection| Message::EditAthlete(EditAthleteMessage::Gender(selection, index)))
                         .width(Length::Fixed(80.0)))
+                    .push(widget::text_input("", &self.edit_athlete_weight_categories[index])
+                        .on_input(move |input| Message::EditAthlete(EditAthleteMessage::WeightCategory(input, index)))
+                        .width(Length::Fixed(80.0)))
                     .push(widget::text(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()), &self.translations))
                         .width(Length::Fixed(150.0)))
                     .push_maybe(if athlete.get_belt().upgradable() {
@@ -423,11 +448,12 @@ impl EMelderApp {
                     })
                     .into()
             }))
-            .push_maybe(if self.athletes.is_empty() {
-                Some(widget::text(translate!("edit_athlete.empty", &self.translations)))
+            .push(if self.athletes.is_empty() {
+                <Text<_> as Into<Element<_>>>::into(widget::text(translate!("edit_athlete.empty", &self.translations)))
             }
             else {
-                None
+                <Builder<_, _> as Into<Element<_>>>::into(widget::button::text(translate!("edit_athlete.commit", &self.translations))
+                    .on_press(Message::EditAthlete(EditAthleteMessage::Commit)))
             })
             .into()
     }
@@ -447,15 +473,30 @@ impl EMelderApp {
                 let belt = self.athletes[index].get_belt();
                 *self.athletes[index].get_belt_mut() = belt.inc();
             }
-        }
-        let athletes_file = self.configs.athletes_file.clone();
-        let athletes =  self.athletes.clone();
-        cosmic::task::future(async move {
-            if let Err(err) = write_athletes(&athletes_file, &athletes) {
-                log::warn!("failed to write athletes, due to {err}");
+            EditAthleteMessage::WeightCategory(weight_category, index) => {
+                let trimmed = weight_category.replace(char::is_whitespace, "");
+                if trimmed.is_empty() || (trimmed.starts_with(['+', '-', '0', '1', '2', '3', '4',
+                '5', '6', '7', '8', '9']) && trimmed.chars().skip(1).all(char::is_numeric)) {
+                    self.edit_athlete_weight_categories[index] = trimmed;
+                }
             }
-            Message::Nop
-        })
+            EditAthleteMessage::Commit => {
+                for (athlete, weight_category_str) in self.athletes.iter_mut().zip(self.edit_athlete_weight_categories.iter()) {
+                    if let Some(weight_category) = WeightCategory::from_str(weight_category_str) {
+                        *athlete.get_weight_category_mut() = weight_category;
+                    }
+                }
+                let athletes_file = self.configs.athletes_file.clone();
+                let athletes =  self.athletes.clone();
+                return cosmic::task::future(async move {
+                    if let Err(err) = write_athletes(&athletes_file, &athletes) {
+                        log::warn!("failed to write athletes, due to {err}");
+                    }
+                    Message::Nop
+                });
+            }
+        }
+        Task::none()
     }
 
     pub fn view_deleting(&self) -> Element<<Self as Application>::Message> {
@@ -485,6 +526,7 @@ impl EMelderApp {
 
     pub fn update_deleting(&mut self, message: DeletingMessage) -> Task<<Self as Application>::Message> {
         self.athletes.remove(message);
+        self.edit_athlete_weight_categories.remove(message);
         let athletes_file = self.configs.athletes_file.clone();
         let athletes = self.athletes.clone();
         cosmic::task::future(async move {
