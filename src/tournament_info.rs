@@ -556,20 +556,22 @@ pub struct RegisteringAthlete {
     birth_year: u16,
     gender_category: GenderCategory,
     gender: GenderCategory,
-    age_category: String
+    age_category: String,
+    pub(crate) index: usize
 }
 
 impl RegisteringAthlete {
-    pub fn new(given_name: String, sur_name: String, belt: Belt, weight_category: String, birth_year: u16, gender: GenderCategory,
-    age_category: String) -> Self {
+    #[allow(clippy::too_many_arguments)]
+    fn new(given_name: String, sur_name: String, belt: Belt, weight_category: String, birth_year: u16, gender: GenderCategory,
+    age_category: String, index: usize) -> Self {
         Self {
-            given_name, sur_name, belt, weight_category, birth_year, gender_category: gender, gender, age_category
+            given_name, sur_name, belt, weight_category, birth_year, gender_category: gender, gender, age_category, index
         }
     }
 
-    pub fn from_athlete(athlete: &Athlete) -> Self {
+    pub fn from_athlete(athlete: &Athlete, index: usize) -> Self {
         Self::new(athlete.given_name.clone(), athlete.sur_name.clone(), athlete.belt,
-        athlete.weight_category.to_string(), athlete.birth_year, athlete.gender, String::new())
+        athlete.weight_category.to_string(), athlete.birth_year, athlete.gender, String::new(), index)
     }
 
     pub fn get_given_name(&self) -> &str {

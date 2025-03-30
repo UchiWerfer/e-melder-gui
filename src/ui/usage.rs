@@ -52,12 +52,6 @@ pub enum EditAthleteMessage {
 
 pub type DeletingMessage = usize;
 
-enum Written {
-    Successful,
-    Error,
-    InvalidWeightCategory
-}
-
 impl EMelderApp {
     #[allow(clippy::too_many_lines)]
     pub fn view_registering(&self) -> Element<<Self as Application>::Message> {
@@ -116,7 +110,12 @@ impl EMelderApp {
                                 .push(widget::text(athlete.get_birth_year().to_string())
                                     .width(Length::Fixed(40.0)))
                                 .push(widget::button::text(translate!("register.table.add", &self.translations))
-                                    .on_press(Message::Registering(RegisteringMessage::Add(index))))
+                                    .on_press_maybe(if self.registering.athletes.iter().any(|reg_athlete| reg_athlete.index == index) {
+                                        None
+                                    }
+                                    else {
+                                        Some(Message::Registering(RegisteringMessage::Add(index)))
+                                    }))
                                 .into()
                         }))
                     .push_maybe(if self.athletes.iter().any(|athlete| matches_query(
@@ -202,32 +201,44 @@ impl EMelderApp {
                 self.calendar_model.selected = date;
             }
             RegisteringMessage::Register => {
-                let athletes = self.registering.athletes.clone();
+                let reg_athletes = self.registering.athletes.clone();
+                for reg_athlete in &self.registering.athletes {
+                    if let Some(weight_category) = WeightCategory::from_str(reg_athlete.get_weight_category()) {
+                        *self.athletes[reg_athlete.index].get_weight_category_mut() = weight_category;
+                        self.edit_athlete_weight_categories[reg_athlete.index] = weight_category.to_string();
+                    }
+                    else {
+                        let translations = self.translations.clone();
+                        std::thread::spawn(move || {
+                            #[cfg(all(target_family="unix", not(target_os="macos")))]
+                            let _ = notify_rust::Notification::new()
+                                .summary(&translate!("application.title", &translations))
+                                .body(&translate!("register.notification.invalid_weight_category", &translations))
+                                .sound_name("dialog-error")
+                                .show().map(|handle| handle.wait_for_action(|_| {}));
+                            #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
+                            let _ = notify_rust::Notification::new()
+                                .summary(&translate!("application.title", &translations))
+                                .body(&translate!("register.notification.invalid_weight_category", &translations))
+                                .show();
+                        });
+                        return Task::none();
+                    }
+                }
+                let athletes = self.athletes.clone();
                 let name = self.registering.name.clone();
                 let place = self.registering.place.clone();
                 let club = self.club.clone();
                 let configs = self.configs.clone();
                 let date = self.registering.date;
                 let translations = self.translations.clone();
+                let athletes_file = self.configs.athletes_file.clone();
                 return cosmic::task::future(async move {
-                    let tournaments = registering_athletes_to_tournaments(&athletes,
-                    &name, date, &place, &club);
+                    let tournaments = registering_athletes_to_tournaments(&reg_athletes,
+                                                                          &name, date, &place, &club).expect("checked for this implicitly above");
 
-                    let written = if let Some(tournaments) = tournaments {
-                        match write_tournaments(&tournaments, &configs) {
-                            Ok(()) => Written::Successful,
-                            Err(err) => {
-                                log::warn!("failed to write tournaments, due to {err}");
-                                Written::Error
-                            }
-                        }
-                    }
-                    else {
-                        Written::InvalidWeightCategory
-                    };
-
-                    match written {
-                        Written::Successful => {
+                    match write_tournaments(&tournaments, &configs) {
+                        Ok(()) => {
                             let tournament_basedir = configs.tournament_basedir.clone();
                             #[cfg(all(target_family="unix", not(target_os="macos")))]
                             std::thread::spawn(move || {
@@ -249,7 +260,8 @@ impl EMelderApp {
                             #[cfg(any(not(target_family="unix"), target_os="macos"))]
                             let _ = open::that_detached(tournament_basedir);
                         }
-                        Written::Error => {
+                        Err(err) => {
+                            log::warn!("failed to write tournaments, due to {err}");
                             std::thread::spawn(move || {
                                 #[cfg(all(target_family="unix", not(target_os="macos")))]
                                 let _ = notify_rust::Notification::new()
@@ -264,21 +276,10 @@ impl EMelderApp {
                                     .show();
                             });
                         }
-                        Written::InvalidWeightCategory => {
-                            std::thread::spawn(move || {
-                                #[cfg(all(target_family="unix", not(target_os="macos")))]
-                                let _ = notify_rust::Notification::new()
-                                    .summary(&translate!("application.title", &translations))
-                                    .body(&translate!("register.notification.invalid_weight_category", &translations))
-                                    .sound_name("dialog-error")
-                                    .show().map(|handle| handle.wait_for_action(|_| {}));
-                                #[cfg(not(all(target_family="unix", not(target_os="macos"))))]
-                                let _ = notify_rust::Notification::new()
-                                    .summary(&translate!("application.title", &translations))
-                                    .body(&translate!("register.notification.invalid_weight_category", &translations))
-                                    .show();
-                            });
-                        }
+                    }
+
+                    if let Err(err) = write_athletes(&athletes_file, &athletes) {
+                        log::warn!("failed to write athletes due to {err}");
                     }
 
                     Message::Nop
@@ -288,7 +289,10 @@ impl EMelderApp {
                 self.registering.search = search;
             }
             RegisteringMessage::Add(selection) => {
-                self.registering.athletes.push(RegisteringAthlete::from_athlete(&self.athletes[selection]));
+                if self.registering.athletes.iter().any(|reg_athlete| reg_athlete.index == selection) {
+                    return Task::none();
+                }
+                self.registering.athletes.push(RegisteringAthlete::from_athlete(&self.athletes[selection], selection));
             }
             RegisteringMessage::GenderCategory(selection, index) => {
                 let gender = self.registering.athletes[index].get_gender();
@@ -527,6 +531,17 @@ impl EMelderApp {
     pub fn update_deleting(&mut self, message: DeletingMessage) -> Task<<Self as Application>::Message> {
         self.athletes.remove(message);
         self.edit_athlete_weight_categories.remove(message);
+
+        if let Some(registering_to_delete) = self.registering.athletes.iter().position(|reg_athlete| reg_athlete.index == message) {
+            self.registering.athletes.remove(registering_to_delete);
+        }
+
+        for reg_athlete in &mut self.registering.athletes {
+            if reg_athlete.index > message {
+                reg_athlete.index -= 1;
+            }
+        }
+
         let athletes_file = self.configs.athletes_file.clone();
         let athletes = self.athletes.clone();
         cosmic::task::future(async move {
