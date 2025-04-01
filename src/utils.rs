@@ -239,6 +239,10 @@ pub fn get_configs() -> io::Result<Configs> {
             write_configs(&configs)?;
             return Ok(configs);
         }
+        else if latest_version != VERSION {
+            let mut latest_version_file = File::options().write(true).truncate(true).open(&latest_version_path)?;
+            latest_version_file.write_all(VERSION.as_bytes())?;
+        }
         serde_json::from_reader(file).map_err(Into::into)
     }
 }
