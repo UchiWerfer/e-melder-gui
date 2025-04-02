@@ -90,10 +90,9 @@ impl EMelderApp {
                     .push(widget::text_input::search_input("", &self.registering.search)
                         .on_input(|input| Message::Registering(RegisteringMessage::Search(input)))))
                 .push(widget::container(widget::column::with_capacity(self.athletes.len())
-                    .extend(self.athletes.iter().filter(|athlete| matches_query(
+                    .extend(self.athletes.iter().enumerate().filter(|(_, athlete)| matches_query(
                         &format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()),
                         &self.registering.search))
-                        .enumerate()
                         .map(|(index, athlete)| {
                             widget::row::with_capacity(6)
                                 .align_y(Vertical::Center)
