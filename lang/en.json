@@ -64,6 +64,7 @@
     "register.table.year": "Year of birth",
     "register.table.gender_category": "Gender category",
     "register.table.age_category": "Age category",
+    "register.table.age_category.placeholder": "e.g. U13",
     "register.table.weight_category": "Weight category",
     "register.table.gender_category.g": "mixed",
     "register.table.gender_category.w": "female",
