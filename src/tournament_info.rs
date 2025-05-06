@@ -648,10 +648,7 @@ place: &str, club: &Club) -> Option<Vec<Tournament>> {
 fn render(athletes: &[Athlete]) -> String {
     let mut ret = String::new();
     for (i, athlete) in athletes.iter().enumerate() {
-        ret.push_str(&format!(
-            "{}=\"\"1\",{}\"",
-            i + 1, athlete.render()
-        ));
+        let _ = write!(&mut ret, "{}=\"\"1\",{}\"", i + 1, athlete.render());
         if i < athletes.len() - 1 {
             ret.push('\n');
         }

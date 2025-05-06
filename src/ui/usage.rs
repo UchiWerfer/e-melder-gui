@@ -198,6 +198,7 @@ impl EMelderApp {
             RegisteringMessage::Date(date) => {
                 self.registering.date = date;
                 self.calendar_model.selected = date;
+                self.show_date = false;
             }
             RegisteringMessage::Register => {
                 let reg_athletes = self.registering.athletes.clone();
@@ -458,6 +459,7 @@ impl EMelderApp {
                 <Builder<_, _> as Into<Element<_>>>::into(widget::button::text(translate!("edit_athlete.commit", &self.translations))
                     .on_press(Message::EditAthlete(EditAthleteMessage::Commit)))
             })
+            .apply(widget::scrollable)
             .into()
     }
 
@@ -524,6 +526,7 @@ impl EMelderApp {
             else {
                 None
             })
+            .apply(widget::scrollable)
             .into()
     }
 

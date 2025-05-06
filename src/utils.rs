@@ -39,21 +39,20 @@ pub const BELTS: [Belt; 19] = [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, B
 Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1, Belt::Dan1, Belt::Dan2, Belt::Dan3, Belt::Dan4,
 Belt::Dan5, Belt::Dan6, Belt::Dan7, Belt::Dan8, Belt::Dan9, Belt::Dan10];
 pub const THEMES: [Theme; 3] = [Theme::System, Theme::Light, Theme::Dark];
-lazy_static::lazy_static! {
-    pub static ref LEGAL_GENDER_CATEGORIES: enum_map::EnumMap<GenderCategory, &'static [GenderCategory]> = enum_map::enum_map! {
+pub static LEGAL_GENDER_CATEGORIES: std::sync::LazyLock<enum_map::EnumMap<GenderCategory, &'static [GenderCategory]>> = std::sync::LazyLock::new(|| {
+    enum_map::enum_map! {
         GenderCategory::Female => &[GenderCategory::Female, GenderCategory::Mixed],
         GenderCategory::Male => &[GenderCategory::Male, GenderCategory::Mixed],
-        GenderCategory::Mixed => &[GenderCategory::Female, GenderCategory::Male, GenderCategory::Mixed] as &[_]
-    };
-}
-lazy_static::lazy_static! {
-    pub static ref LANG_NAMES: HashMap<&'static str, &'static str> = {
-        let mut m = HashMap::new();
-        m.insert("de", "Deutsch");
-        m.insert("en", "English");
-        m
-    };
-}
+        GenderCategory::Mixed => &[GenderCategory::Female, GenderCategory::Male, GenderCategory::Male] as &[_]
+    }
+});
+
+pub static LANG_NAMES: std::sync::LazyLock<HashMap<&'static str, &'static str>> = std::sync::LazyLock::new(|| {
+    let mut m = HashMap::new();
+    m.insert("de", "Deutsch");
+    m.insert("en", "English");
+    m
+});
 
 #[macro_export]
 macro_rules! translate {

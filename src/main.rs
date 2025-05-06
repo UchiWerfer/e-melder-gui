@@ -134,7 +134,7 @@ fn main() -> cosmic::iced::Result {
         Err(err) => {
             log::warn!("failed to update translations, due to {err}");
         }
-    };
+    }
 
     let mut configs = get_configs().unwrap_or_else(|err| {
         log::error!("failed to load configs, due to {err}");
