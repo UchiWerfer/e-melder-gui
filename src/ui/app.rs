@@ -72,6 +72,47 @@ impl Adding {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub(super) enum SortingState {
+    #[default]
+    None,
+    GivenNameAscending,
+    GivenNameDescending,
+    SurNameAscending,
+    SurNameDescending,
+    YearAscending,
+    YearDescending
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(super) enum SortingKind {
+    GivenName,
+    SurName,
+    Year
+}
+
+impl SortingState {
+    pub fn toggle(&mut self) {
+        match self {
+            Self::None => {},
+            Self::GivenNameAscending => *self = Self::GivenNameDescending,
+            Self::GivenNameDescending => *self = Self::GivenNameAscending,
+            Self::SurNameAscending => *self = Self::SurNameDescending,
+            Self::SurNameDescending => *self = Self::SurNameAscending,
+            Self::YearAscending => *self = Self::YearDescending,
+            Self::YearDescending => *self = Self::YearAscending
+        }
+    }
+
+    pub fn is_sorting_kind(self, sorting_kind: SortingKind) -> bool {
+        match sorting_kind {
+            SortingKind::GivenName => matches!(self, Self::GivenNameAscending | Self::GivenNameDescending),
+            SortingKind::SurName => matches!(self, Self::SurNameAscending | Self::SurNameDescending),
+            SortingKind::Year => matches!(self, Self::YearAscending | Self::YearDescending)
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Theme {
     Dark,
@@ -171,7 +212,8 @@ pub struct EMelderApp {
     pub(super) registering: Registering,
     pub(super) adding: Adding,
     pub(super) configs: Configs,
-    pub(super) translations: HashMap<String, String>
+    pub(super) translations: HashMap<String, String>,
+    pub(super) sorting_state: SortingState
 }
 
 #[derive(Clone, Debug)]
@@ -294,7 +336,8 @@ impl cosmic::Application for EMelderApp {
             adding: Adding::default(),
             configs,
             translations,
-            update_check_text: None
+            update_check_text: None,
+            sorting_state: SortingState::None
         };
         app.set_header_title(translate!("application.title", &app.translations));
         let command = app.set_window_title(translate!("application.title", &app.translations), Id::unique());

@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use chrono::NaiveDate;
 use cosmic::{theme, widget, Application, Apply, Element};
 use cosmic::app::Task;
@@ -8,7 +9,7 @@ use cosmic::widget::Text;
 
 use crate::tournament_info::{registering_athletes_to_tournaments, Athlete, RegisteringAthlete, WeightCategory};
 use crate::translate;
-use crate::ui::app::Message;
+use crate::ui::app::{Message, SortingKind, SortingState};
 use crate::ui::EMelderApp;
 use crate::utils::{write_athletes, write_tournaments, BELTS, GENDERS, LEGAL_GENDER_CATEGORIES};
 
@@ -26,7 +27,35 @@ pub enum RegisteringMessage {
     Delete(usize),
     ToggleDate,
     NextMonth,
-    PrevMonth
+    PrevMonth,
+    ChangeSort(SortChangeMessage)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum SortChangeMessage {
+    GivenName,
+    SurName,
+    Year
+}
+
+impl From<SortChangeMessage> for SortingKind {
+    fn from(value: SortChangeMessage) -> Self {
+        match value {
+            SortChangeMessage::GivenName => SortingKind::GivenName,
+            SortChangeMessage::SurName => SortingKind::SurName,
+            SortChangeMessage::Year => SortingKind::Year
+        }
+    }
+}
+
+impl SortChangeMessage {
+    fn into_default(self) -> SortingState {
+        match self {
+            Self::GivenName => SortingState::GivenNameAscending,
+            Self::SurName => SortingState::SurNameAscending,
+            Self::Year => SortingState::YearDescending
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -89,10 +118,48 @@ impl EMelderApp {
                     .push(widget::text(translate!("register.search", &self.translations)))
                     .push(widget::text_input::search_input("", &self.registering.search)
                         .on_input(|input| Message::Registering(RegisteringMessage::Search(input)))))
-                .push(widget::container(widget::column::with_capacity(self.athletes.len())
+                .push(widget::container(widget::column::with_capacity(self.athletes.len() + 1)
+                    .push(widget::row::with_capacity(5)
+                        .align_y(Vertical::Center)
+                        .push(widget::button::custom(
+                            widget::text::heading(translate!("register.table.given_name", &self.translations)))
+                            .on_press(Message::Registering(RegisteringMessage::ChangeSort(SortChangeMessage::GivenName)))
+                            .width(Length::Fixed(100.0))
+                        )
+                        .push(widget::button::custom(
+                            widget::text::heading(translate!("register.table.sur_name", &self.translations)))
+                            .on_press(Message::Registering(RegisteringMessage::ChangeSort(SortChangeMessage::SurName)))
+                            .width(Length::Fixed(100.0))
+                        )
+                        .push(widget::text::heading(translate!("register.table.gender_category", &self.translations))
+                            .width(Length::Fixed(80.0)))
+                        .push(widget::text::heading(translate!("register.table.belt", &self.translations))
+                            .width(Length::Fixed(150.0)))
+                        .push(widget::button::custom(
+                            widget::text::heading(translate!("register.table.year", &self.translations)))
+                            .on_press(Message::Registering(RegisteringMessage::ChangeSort(SortChangeMessage::Year)))
+                            .width(Length::Fixed(80.0))
+                        )
+                    )
                     .extend(self.athletes.iter().enumerate().filter(|(_, athlete)| matches_query(
                         &format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()),
                         &self.registering.search))
+                        .collect::<Vec<_>>()
+                        .apply(|mut filtered_athletes| {
+                            filtered_athletes.sort_by(|first, second| {
+                                match self.sorting_state {
+                                    SortingState::None => Ordering::Less,
+                                    SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
+                                    SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
+                                    SortingState::SurNameAscending => first.1.get_sur_name().cmp(second.1.get_sur_name()),
+                                    SortingState::SurNameDescending => second.1.get_sur_name().cmp(first.1.get_sur_name()),
+                                    SortingState::YearAscending => first.1.get_birth_year().cmp(&second.1.get_birth_year()),
+                                    SortingState::YearDescending => second.1.get_birth_year().cmp(&first.1.get_birth_year())
+                                }
+                            });
+                            filtered_athletes
+                        })
+                        .into_iter()
                         .map(|(index, athlete)| {
                             widget::row::with_capacity(6)
                                 .align_y(Vertical::Center)
@@ -107,7 +174,7 @@ impl EMelderApp {
                                 &self.translations))
                                     .width(Length::Fixed(150.0)))
                                 .push(widget::text(athlete.get_birth_year().to_string())
-                                    .width(Length::Fixed(40.0)))
+                                    .width(Length::Fixed(80.0)))
                                 .push(widget::button::text(translate!("register.table.add", &self.translations))
                                     .on_press_maybe(if self.registering.athletes.iter().any(|reg_athlete| reg_athlete.index == index) {
                                         None
@@ -319,6 +386,14 @@ impl EMelderApp {
             }
             RegisteringMessage::PrevMonth => {
                 self.calendar_model.show_prev_month();
+            }
+            RegisteringMessage::ChangeSort(sort_change) => {
+                if self.sorting_state.is_sorting_kind(sort_change.into()) {
+                    self.sorting_state.toggle();
+                }
+                else {
+                    self.sorting_state = sort_change.into_default();
+                }
             }
         }
         Task::none()
