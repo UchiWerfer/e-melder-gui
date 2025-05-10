@@ -213,7 +213,11 @@ pub struct EMelderApp {
     pub(super) adding: Adding,
     pub(super) configs: Configs,
     pub(super) translations: HashMap<String, String>,
-    pub(super) sorting_state: SortingState
+    pub(super) sorting_state_registering: SortingState,
+    pub(super) sorting_state_deleting: SortingState,
+    pub(super) sorting_state_editing: SortingState,
+    pub(super) deleting_search: String,
+    pub(super) editing_search: String
 }
 
 #[derive(Clone, Debug)]
@@ -230,9 +234,9 @@ pub enum Message {
 }
 
 impl cosmic::Application for EMelderApp {
-    type Message = Message;
-    type Flags = (Configs, HashMap<String, String>, Club, Vec<Athlete>);
     type Executor = cosmic::executor::Default;
+    type Flags = (Configs, HashMap<String, String>, Club, Vec<Athlete>);
+    type Message = Message;
 
     const APP_ID: &'static str = "io.github.UchiWerfer.e-melder-gui";
 
@@ -242,15 +246,6 @@ impl cosmic::Application for EMelderApp {
 
     fn core_mut(&mut self) -> &mut Core {
         &mut self.core
-    }
-
-    fn nav_model(&self) -> Option<&nav_bar::Model> {
-        Some(&self.nav)
-    }
-
-    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<Self::Message> {
-        self.nav.activate(id);
-        Task::none()
     }
 
     fn init(core: Core, flags: Self::Flags) -> (Self, Task<Self::Message>) {
@@ -337,11 +332,50 @@ impl cosmic::Application for EMelderApp {
             configs,
             translations,
             update_check_text: None,
-            sorting_state: SortingState::None
+            sorting_state_registering: SortingState::None,
+            sorting_state_deleting: SortingState::None,
+            sorting_state_editing: SortingState::None,
+            deleting_search: String::new(),
+            editing_search: String::new()
         };
         app.set_header_title(translate!("application.title", &app.translations));
         let command = app.set_window_title(translate!("application.title", &app.translations), Id::unique());
         (app, command)
+    }
+
+    fn nav_model(&self) -> Option<&nav_bar::Model> {
+        Some(&self.nav)
+    }
+
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<Self::Message> {
+        self.nav.activate(id);
+        Task::none()
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        cosmic::iced::keyboard::on_key_press(|key, modifiers| {
+            // checks for ctrl on most platforms
+            if modifiers.command() && key.as_ref() == Key::Character("q") {
+                Some(Message::Close)
+            }
+            else {
+                None
+            }
+        })
+    }
+
+    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+        match message {
+            Message::Registering(registering) => self.update_registering(registering),
+            Message::Adding(adding) => self.update_adding(adding),
+            Message::EditAthlete(edit_athlete) => self.update_edit_athlete(edit_athlete),
+            Message::Deleting(deleting) => self.update_deleting(deleting),
+            Message::EditClub(edit_club) => self.update_edit_club(edit_club),
+            Message::Config(config) => self.update_config(config),
+            Message::About(about) => self.update_about(about),
+            Message::Nop => Task::none(),
+            Message::Close => cosmic::iced::exit()
+        }
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -359,31 +393,5 @@ impl cosmic::Application for EMelderApp {
         else {
             cosmic::widget::text(translate!("application.empty", &self.translations)).into()
         }
-    }
-
-    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
-        match message {
-            Message::Registering(registering) => self.update_registering(registering),
-            Message::Adding(adding) => self.update_adding(adding),
-            Message::EditAthlete(edit_athlete) => self.update_edit_athlete(edit_athlete),
-            Message::Deleting(deleting) => self.update_deleting(deleting),
-            Message::EditClub(edit_club) => self.update_edit_club(edit_club),
-            Message::Config(config) => self.update_config(config),
-            Message::About(about) => self.update_about(about),
-            Message::Nop => Task::none(),
-            Message::Close => cosmic::iced::exit()
-        }
-    }
-
-    fn subscription(&self) -> Subscription<Self::Message> {
-        cosmic::iced::keyboard::on_key_press(|key, modifiers| {
-            // checks for ctrl on most platforms
-            if modifiers.command() && key.as_ref() == Key::Character("q") {
-                Some(Message::Close)
-            }
-            else {
-                None
-            }
-        })
     }
 }

@@ -76,10 +76,17 @@ pub enum EditAthleteMessage {
     Gender(usize, usize),
     Graduate(usize),
     WeightCategory(String, usize),
-    Commit
+    Commit,
+    ChangeSort(SortChangeMessage),
+    Search(String)
 }
 
-pub type DeletingMessage = usize;
+#[derive(Clone, Debug)]
+pub enum DeletingMessage {
+    Delete(usize),
+    ChangeSort(SortChangeMessage),
+    Search(String)
+}
 
 impl EMelderApp {
     #[allow(clippy::too_many_lines)]
@@ -147,7 +154,7 @@ impl EMelderApp {
                         .collect::<Vec<_>>()
                         .apply(|mut filtered_athletes| {
                             filtered_athletes.sort_by(|first, second| {
-                                match self.sorting_state {
+                                match self.sorting_state_registering {
                                     SortingState::None => Ordering::Less,
                                     SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
                                     SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
@@ -388,11 +395,11 @@ impl EMelderApp {
                 self.calendar_model.show_prev_month();
             }
             RegisteringMessage::ChangeSort(sort_change) => {
-                if self.sorting_state.is_sorting_kind(sort_change.into()) {
-                    self.sorting_state.toggle();
+                if self.sorting_state_registering.is_sorting_kind(sort_change.into()) {
+                    self.sorting_state_registering.toggle();
                 }
                 else {
-                    self.sorting_state = sort_change.into_default();
+                    self.sorting_state_registering = sort_change.into_default();
                 }
             }
         }
@@ -495,8 +502,65 @@ impl EMelderApp {
     }
 
     pub fn view_edit_athlete(&self) -> Element<<Self as Application>::Message> {
-        widget::column::with_capacity(self.athletes.len() + 1)
-            .extend(self.athletes.iter().enumerate().map(|(index, athlete)| {
+        widget::column::with_capacity(2)
+            .push(widget::column::with_capacity(2)
+                .push(widget::row::with_capacity(2)
+                    .align_y(Vertical::Center)
+                    .push(widget::text(translate!("register.search", &self.translations)))
+                    .push(widget::text_input::search_input("", &self.editing_search)
+                        .on_input(|input| Message::EditAthlete(EditAthleteMessage::Search(input))))
+                )
+                .push(widget::row::with_capacity(6)
+                    .align_y(Vertical::Center)
+                    .spacing(theme::active().cosmic().spacing.space_xs)
+                    .push(widget::button::custom(
+                        widget::text::heading(translate!("register.table.given_name", &self.translations))
+                    )
+                        .on_press(Message::EditAthlete(EditAthleteMessage::ChangeSort(SortChangeMessage::GivenName)))
+                        .width(Length::Fixed(150.0))
+                    )
+                    .push(widget::button::custom(
+                        widget::text::heading(translate!("register.table.sur_name", &self.translations))
+                    )
+                        .on_press(Message::EditAthlete(EditAthleteMessage::ChangeSort(SortChangeMessage::SurName)))
+                        .width(Length::Fixed(150.0))
+                    )
+                    .push(widget::button::custom(
+                        widget::text::heading(translate!("register.table.year", &self.translations))
+                    )
+                        .on_press(Message::EditAthlete(EditAthleteMessage::ChangeSort(SortChangeMessage::Year)))
+                        .width(Length::Fixed(80.0))
+                    )
+                    .push(widget::text::heading(translate!("register.table.gender_category",
+                        &self.translations)).width(Length::Fixed(80.0)))
+                    .push(widget::text::heading(translate!("register.table.weight_category",
+                        &self.translations)).width(Length::Fixed(80.0)))
+                    .push(widget::text::heading(translate!("register.table.belt",
+                        &self.translations)).width(Length::Fixed(150.0)))
+                ))
+            .push(
+                widget::column::with_capacity(self.athletes.len() + 1)
+                    .extend(self.athletes.iter().enumerate()
+                        .filter(|(_, athlete)| matches_query(
+                            &format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()),
+                        &self.editing_search))
+                        .collect::<Vec<_>>()
+                        .apply(|mut filtered_athletes| {
+                            filtered_athletes.sort_by(|first, second| {
+                                match self.sorting_state_editing {
+                                    SortingState::None => Ordering::Less,
+                                    SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
+                                    SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
+                                    SortingState::SurNameAscending => first.1.get_sur_name().cmp(second.1.get_sur_name()),
+                                    SortingState::SurNameDescending => second.1.get_sur_name().cmp(first.1.get_sur_name()),
+                                    SortingState::YearAscending => first.1.get_birth_year().cmp(&second.1.get_birth_year()),
+                                    SortingState::YearDescending => second.1.get_birth_year().cmp(&first.1.get_birth_year())
+                                }
+                            });
+                            filtered_athletes
+                        })
+                        .into_iter()
+                        .map(|(index, athlete)| {
                 widget::row::with_capacity(6 + <bool as Into<usize>>::into(athlete.get_belt().upgradable()))
                     .align_y(Vertical::Center)
                     .spacing(theme::active().cosmic().spacing.space_xs)
@@ -506,7 +570,7 @@ impl EMelderApp {
                     .push(widget::text_input("", athlete.get_sur_name())
                         .on_input(move |input| Message::EditAthlete(EditAthleteMessage::SurName(input, index)))
                         .width(Length::Fixed(150.0)))
-                    .push(widget::text(athlete.get_birth_year().to_string()).width(Length::Fixed(40.0)))
+                    .push(widget::text(athlete.get_birth_year().to_string()).width(Length::Fixed(80.0)))
                     .push(widget::dropdown(&self.genders,
                     GENDERS.iter().position(|gender| {
                         *gender == athlete.get_gender()
@@ -527,14 +591,15 @@ impl EMelderApp {
                     })
                     .into()
             }))
-            .push(if self.athletes.is_empty() {
+                    .push(if self.athletes.is_empty() {
                 <Text<_> as Into<Element<_>>>::into(widget::text(translate!("edit_athlete.empty", &self.translations)))
             }
-            else {
+                    else {
                 <Builder<_, _> as Into<Element<_>>>::into(widget::button::text(translate!("edit_athlete.commit", &self.translations))
                     .on_press(Message::EditAthlete(EditAthleteMessage::Commit)))
             })
-            .apply(widget::scrollable)
+                    .apply(widget::scrollable)
+            )
             .into()
     }
 
@@ -575,58 +640,136 @@ impl EMelderApp {
                     Message::Nop
                 });
             }
+            EditAthleteMessage::ChangeSort(sort_change) => {
+                if self.sorting_state_editing.is_sorting_kind(sort_change.into()) {
+                    self.sorting_state_editing.toggle();
+                }
+                else {
+                    self.sorting_state_editing = sort_change.into_default();
+                }
+            }
+            EditAthleteMessage::Search(search) => {
+                self.editing_search = search;
+            }
         }
         Task::none()
     }
 
     pub fn view_deleting(&self) -> Element<<Self as Application>::Message> {
-        widget::column::with_capacity(self.athletes.len())
-            .extend(self.athletes.iter().enumerate().map(|(index, athlete)| {
+        widget::column::with_capacity(2)
+            .push(widget::column::with_capacity(2)
+                .push(widget::row::with_capacity(2)
+                    .align_y(Vertical::Center)
+                    .push(widget::text(translate!("register.search", &self.translations)))
+                    .push(widget::text_input::search_input("", &self.deleting_search)
+                        .on_input(|input| Message::Deleting(DeletingMessage::Search(input)))))
+                .push(widget::row::with_capacity(5)
+                    .align_y(Vertical::Center)
+                    .push(widget::button::custom(
+                        widget::text::heading(translate!("register.table.given_name", &self.translations))
+                    )
+                        .on_press(Message::Deleting(DeletingMessage::ChangeSort(SortChangeMessage::GivenName)))
+                        .width(Length::Fixed(100.0)))
+                    .push(widget::button::custom(
+                        widget::text::heading(translate!("register.table.sur_name", &self.translations))
+                    )
+                        .on_press(Message::Deleting(DeletingMessage::ChangeSort(SortChangeMessage::SurName)))
+                        .width(Length::Fixed(100.0)))
+                    .push(widget::button::custom(
+                        widget::text::heading(translate!("register.table.year", &self.translations))
+                    )
+                        .on_press(Message::Deleting(DeletingMessage::ChangeSort(SortChangeMessage::Year)))
+                        .width(Length::Fixed(80.0))
+                    )
+                    .push(widget::text::heading(translate!("register.table.gender_category",
+                    &self.translations)).width(Length::Fixed(80.0)))
+                    .push(widget::text::heading(translate!("register.table.belt",
+                    &self.translations)).width(Length::Fixed(150.0))))
+            )
+            .push(widget::column::with_capacity(self.athletes.len())
+                .extend(self.athletes.iter().enumerate().filter(|(_, athlete)| matches_query(
+                    &format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()),
+                    &self.deleting_search))
+                    .collect::<Vec<_>>()
+                    .apply(|mut filtered_athletes| {
+                    filtered_athletes.sort_by(|first, second| {
+                        match self.sorting_state_deleting {
+                            SortingState::None => Ordering::Less,
+                            SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
+                            SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
+                            SortingState::SurNameAscending => first.1.get_sur_name().cmp(second.1.get_sur_name()),
+                            SortingState::SurNameDescending => second.1.get_sur_name().cmp(first.1.get_sur_name()),
+                            SortingState::YearAscending => first.1.get_birth_year().cmp(&second.1.get_birth_year()),
+                            SortingState::YearDescending => second.1.get_birth_year().cmp(&first.1.get_birth_year())
+                        }
+                    });
+                    filtered_athletes
+                })
+                    .into_iter()
+                    .map(|(index, athlete)| {
                 widget::row::with_capacity(6)
                     .align_y(Vertical::Center)
                     .push(widget::text(athlete.get_given_name()).width(Length::Fixed(100.0)))
                     .push(widget::text(athlete.get_sur_name()).width(Length::Fixed(100.0)))
-                    .push(widget::text(athlete.get_birth_year().to_string()).width(Length::Fixed(40.0)))
+                    .push(widget::text(athlete.get_birth_year().to_string()).width(Length::Fixed(80.0)))
                     .push(widget::text(translate!(&format!("register.table.gender_category.{}",
                         athlete.get_gender().render()), &self.translations)).width(Length::Fixed(80.0)))
                     .push(widget::text(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()),
                     &self.translations)).width(Length::Fixed(150.0)))
                     .push(widget::button::text(translate!("delete.delete", &self.translations))
-                        .on_press(Message::Deleting(index)))
+                        .on_press(Message::Deleting(DeletingMessage::Delete(index))))
                     .into()
             }))
-            .push_maybe(if self.athletes.is_empty() {
+                .push_maybe(if self.athletes.is_empty() {
                 Some(widget::text(translate!("delete.empty", &self.translations)))
             }
-            else {
+                else {
                 None
             })
-            .apply(widget::scrollable)
+                .apply(widget::scrollable)
+            )
             .into()
     }
 
     pub fn update_deleting(&mut self, message: DeletingMessage) -> Task<<Self as Application>::Message> {
-        self.athletes.remove(message);
-        self.edit_athlete_weight_categories.remove(message);
+        match message {
+            DeletingMessage::Delete(to_delete) => {
+                self.athletes.remove(to_delete);
+                self.edit_athlete_weight_categories.remove(to_delete);
 
-        if let Some(registering_to_delete) = self.registering.athletes.iter().position(|reg_athlete| reg_athlete.index == message) {
-            self.registering.athletes.remove(registering_to_delete);
-        }
+                if let Some(registering_to_delete) = self.registering.athletes.iter().position(|reg_athlete| reg_athlete.index == to_delete) {
+                    self.registering.athletes.remove(registering_to_delete);
+                }
 
-        for reg_athlete in &mut self.registering.athletes {
-            if reg_athlete.index > message {
-                reg_athlete.index -= 1;
+                for reg_athlete in &mut self.registering.athletes {
+                    if reg_athlete.index > to_delete {
+                        reg_athlete.index -= 1;
+                    }
+                }
+
+                let athletes_file = self.configs.athletes_file.clone();
+                let athletes = self.athletes.clone();
+                cosmic::task::future(async move {
+                    if let Err(err) = write_athletes(&athletes_file, &athletes) {
+                        log::warn!("failed to write athletes, due to {err}");
+                    }
+                    Message::Nop
+                })
+            }
+            DeletingMessage::ChangeSort(sort_change) => {
+                if self.sorting_state_deleting.is_sorting_kind(sort_change.into()) {
+                    self.sorting_state_deleting.toggle();
+                }
+                else {
+                    self.sorting_state_deleting = sort_change.into_default();
+                }
+                Task::none()
+            }
+            DeletingMessage::Search(search) => {
+                self.deleting_search = search;
+                Task::none()
             }
         }
-
-        let athletes_file = self.configs.athletes_file.clone();
-        let athletes = self.athletes.clone();
-        cosmic::task::future(async move {
-            if let Err(err) = write_athletes(&athletes_file, &athletes) {
-                log::warn!("failed to write athletes, due to {err}");
-            }
-            Message::Nop
-        })
     }
 }
 

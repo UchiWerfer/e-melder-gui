@@ -33,7 +33,7 @@ static ILLEGAL_CHARS: &str = "<>:\"/\\|?*\0";
 #[cfg(not(target_os="windows"))]
 static ILLEGAL_CHARS: &str = "/\0";
 pub const DEFAULT_BIRTH_YEAR: u16 = 2010;
-pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1150.0, 700.0];
+pub const DEFAULT_WINDOW_SIZE: [f32; 2] = [1170.0, 700.0];
 pub const GENDERS: [GenderCategory; 3] = [GenderCategory::Mixed, GenderCategory::Male, GenderCategory::Female];
 pub const BELTS: [Belt; 19] = [Belt::Kyu9, Belt::Kyu8, Belt::Kyu7, Belt::Kyu6, Belt::Kyu5,
 Belt::Kyu4, Belt::Kyu3, Belt::Kyu2, Belt::Kyu1, Belt::Dan1, Belt::Dan2, Belt::Dan3, Belt::Dan4,
