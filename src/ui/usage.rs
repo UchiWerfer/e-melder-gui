@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Weekday};
 use cosmic::{theme, widget, Application, Apply, Element};
 use cosmic::app::Task;
 use cosmic::iced::{Length, Pixels};
@@ -111,7 +111,8 @@ impl EMelderApp {
                 Some(widget::popover(widget::calendar(&self.calendar_model,
                 |date| Message::Registering(RegisteringMessage::Date(date)),
                 || Message::Registering(RegisteringMessage::PrevMonth),
-                                                      || Message::Registering(RegisteringMessage::NextMonth))))
+                                                      || Message::Registering(RegisteringMessage::NextMonth),
+                Weekday::Mon)))
             }
             else {
                 None
