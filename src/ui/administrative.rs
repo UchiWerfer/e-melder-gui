@@ -55,6 +55,7 @@ pub enum AboutMessage {
 }
 
 impl EMelderApp {
+    #[allow(clippy::too_many_lines)]
     pub fn view_edit_club(&self) -> Element<<Self as Application>::Message> {
         widget::column::with_capacity(18)
             .push(widget::row::with_capacity(2)
