@@ -159,7 +159,7 @@ impl EMelderApp {
                         .apply(|mut filtered_athletes| {
                             filtered_athletes.sort_by(|first, second| {
                                 match self.sorting_state_registering {
-                                    SortingState::None => Ordering::Less,
+                                    SortingState::None => Ordering::Equal,
                                     SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
                                     SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
                                     SortingState::SurNameAscending => first.1.get_sur_name().cmp(second.1.get_sur_name()),
@@ -556,7 +556,7 @@ impl EMelderApp {
                         .apply(|mut filtered_athletes| {
                             filtered_athletes.sort_by(|first, second| {
                                 match self.sorting_state_editing {
-                                    SortingState::None => Ordering::Less,
+                                    SortingState::None => Ordering::Equal,
                                     SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
                                     SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
                                     SortingState::SurNameAscending => first.1.get_sur_name().cmp(second.1.get_sur_name()),
@@ -702,7 +702,7 @@ impl EMelderApp {
                     .apply(|mut filtered_athletes| {
                     filtered_athletes.sort_by(|first, second| {
                         match self.sorting_state_deleting {
-                            SortingState::None => Ordering::Less,
+                            SortingState::None => Ordering::Equal,
                             SortingState::GivenNameAscending => first.1.get_given_name().cmp(second.1.get_given_name()),
                             SortingState::GivenNameDescending => second.1.get_given_name().cmp(first.1.get_given_name()),
                             SortingState::SurNameAscending => first.1.get_sur_name().cmp(second.1.get_sur_name()),
