@@ -569,7 +569,7 @@ impl EMelderApp {
                         })
                         .into_iter()
                         .map(|(index, athlete)| {
-                widget::row::with_capacity(6 + <bool as Into<usize>>::into(athlete.get_belt().upgradable()))
+                widget::row::with_capacity(7)
                     .align_y(Vertical::Center)
                     .spacing(theme::active().cosmic().spacing.space_xs)
                     .push(widget::text_input("", athlete.get_given_name())
@@ -590,12 +590,12 @@ impl EMelderApp {
                         .width(Length::Fixed(80.0)))
                     .push(widget::text(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()), &self.translations))
                         .width(Length::Fixed(150.0)))
-                    .push_maybe(if athlete.get_belt().upgradable() {
-                        Some(widget::button::text(translate!("edit_athlete.graduate", &self.translations))
-                            .on_press(Message::EditAthlete(EditAthleteMessage::Graduate(index))))
+                    .push(if athlete.get_belt().upgradable() {
+                        widget::button::text(translate!("edit_athlete.graduate", &self.translations))
+                            .on_press(Message::EditAthlete(EditAthleteMessage::Graduate(index)))
                     }
                     else {
-                        None
+                        widget::button::text(translate!("edit_athlete.graduate", &self.translations))
                     })
                     .into()
             }))
