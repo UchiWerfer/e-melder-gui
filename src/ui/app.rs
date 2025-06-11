@@ -339,7 +339,7 @@ impl cosmic::Application for EMelderApp {
             editing_search: String::new()
         };
         app.set_header_title(translate!("application.title", &app.translations));
-        let command = app.set_window_title(translate!("application.title", &app.translations), Id::unique());
+        let command = app.set_window_title(translate!("application.title", &app.translations), app.core().main_window_id().unwrap_or_else(Id::unique));
         (app, command)
     }
 
