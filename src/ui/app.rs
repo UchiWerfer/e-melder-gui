@@ -276,7 +276,7 @@ impl cosmic::Application for EMelderApp {
         let config_lang_selection = configs.langs.iter().position(|lang_code| {
             lang_code == &configs.lang
         }).unwrap_or_default();
-       let lang_names = configs.langs.iter().map(|lang_code| {
+        let lang_names = configs.langs.iter().map(|lang_code| {
             LANG_NAMES.get(lang_code.as_str()).unwrap_or(&lang_code.as_str()).to_owned().to_owned()
         }).collect();
         let gender_selection = GENDERS.iter().position(|gender| {
