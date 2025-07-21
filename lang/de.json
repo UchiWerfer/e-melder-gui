@@ -89,6 +89,7 @@
     "config.select_tournament_basedir": "Ordner für die Meldedateien:",
     "config.tournament_basedir.file_picker": "Wählen Sie den Ordner für die Meldedateien aus",
     "config.default_gender": "Standard-Einstellung für das Geschlecht für neu hinzugefügte Judoka",
+    "config.hide_selected": "Zum Melden ausgewählt Judoka ausblenden",
     "config.save": "Einstellungen speichern",
     "edit_athlete.graduate": "Graduieren",
     "edit_athlete.empty": "Keine Judoka vorhanden",

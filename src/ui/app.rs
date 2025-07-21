@@ -142,6 +142,10 @@ impl From<bool> for Theme {
     }
 }
 
+fn get_true() -> bool {
+    true
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Configs {
     pub lang: String,
@@ -156,7 +160,9 @@ pub struct Configs {
     pub langs: Vec<String>,
     #[serde(serialize_with="crate::utils::serialize_gender",
     deserialize_with="crate::utils::deserialize_gender", rename = "default-gender")]
-    pub default_gender: GenderCategory
+    pub default_gender: GenderCategory,
+    #[serde(default="get_true")]
+    pub hide_selected: bool
 }
 
 #[derive(Deserialize)]
@@ -184,7 +190,8 @@ impl From<OldConfigs> for Configs {
             club_file: value.club_file,
             tournament_basedir: value.tournament_basedir,
             langs: Vec::new(),
-            default_gender: value.default_gender_category
+            default_gender: value.default_gender_category,
+            hide_selected: false
         }
     }
 }

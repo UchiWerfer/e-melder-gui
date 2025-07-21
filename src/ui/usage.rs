@@ -155,6 +155,9 @@ impl EMelderApp {
                     .extend(self.athletes.iter().enumerate().filter(|(_, athlete)| matches_query(
                         &format!("{} {}", athlete.get_given_name(), athlete.get_sur_name()),
                         &self.registering.search))
+                        .filter(|(index, _)| {
+                            !(self.configs.hide_selected && self.registering.athletes.iter().any(|reg_athlete| reg_athlete.index == *index))
+                        })
                         .collect::<Vec<_>>()
                         .apply(|mut filtered_athletes| {
                             filtered_athletes.sort_by(|first, second| {

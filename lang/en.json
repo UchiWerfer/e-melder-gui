@@ -89,6 +89,7 @@
     "config.select_tournament_basedir": "Folder for the signing-up files:",
     "config.tournament_basedir.file_picker": "Select the folder for the signing-up files",
     "config.default_gender": "Default-setting for the Gender for newly added Judoka",
+    "config.hide_selected": "Hide Judoka selected to be registered",
     "config.save": "Save settings",
     "edit_athlete.graduate": "Graduate",
     "edit_athlete.empty": "No Judoka present",

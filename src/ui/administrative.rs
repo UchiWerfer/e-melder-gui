@@ -42,7 +42,8 @@ pub enum ConfigMessage {
     SelectedAthletesFile(Option<PathBuf>),
     SelectedClubFile(Option<PathBuf>),
     SelectedTournamentBasedir(Option<PathBuf>),
-    ThemeSelected(usize)
+    ThemeSelected(usize),
+    ToggleHide(bool)
 }
 
 #[derive(Clone, Debug)]
@@ -244,7 +245,7 @@ impl EMelderApp {
     }
 
     pub fn view_config(&self) -> Element<<Self as Application>::Message> {
-            widget::column::with_capacity(7)
+            widget::column::with_capacity(8)
                 .push(widget::row::with_capacity(2)
                     .align_y(Vertical::Center)
                     .push(widget::dropdown(&self.lang_names,
@@ -257,6 +258,8 @@ impl EMelderApp {
                     Some(self.theme_selection),
                     |selection| Message::Config(ConfigMessage::ThemeSelected(selection))))
                     .push(widget::text(translate!("config.theme", &self.translations))))
+                .push(widget::checkbox(translate!("config.hide_selected", &self.translations), self.configs.hide_selected)
+                    .on_toggle(|state| Message::Config(ConfigMessage::ToggleHide(state))))
                 .push(widget::row::with_capacity(2)
                     .align_y(Vertical::Center)
                     .push(widget::text(translate!("config.select_athletes_file", &self.translations)))
@@ -342,6 +345,9 @@ impl EMelderApp {
                 if let Some(tournament_basedir) = tournament_basedir {
                     self.configs.tournament_basedir = tournament_basedir;
                 }
+            }
+            ConfigMessage::ToggleHide(state) => {
+                self.configs.hide_selected = state;
             }
         }
         Task::none()
