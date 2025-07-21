@@ -61,6 +61,7 @@ impl Belt {
         format!("{}", self.to_number())
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         Some(match s {
             "kyu9" => Self::Kyu9,
@@ -88,6 +89,7 @@ impl Belt {
         })
     }
 
+    #[allow(clippy::return_self_not_must_use)]
     pub fn inc(self) -> Self {
         match self {
             Self::Kyu9 => Self::Kyu8,
@@ -193,6 +195,7 @@ impl WeightCategory {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         let kind = if s.starts_with('-') {
             WeightCategoryKind::Under
@@ -498,6 +501,7 @@ impl GenderCategory {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         Some(match s {
             "w" => Self::Female,
