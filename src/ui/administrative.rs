@@ -57,7 +57,7 @@ pub enum AboutMessage {
 
 impl EMelderApp {
     #[allow(clippy::too_many_lines)]
-    pub fn view_edit_club(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_edit_club(&self) -> Element<'_, <Self as Application>::Message> {
         widget::column::with_capacity(18)
             .push(widget::row::with_capacity(2)
                 .spacing(theme::active().cosmic().spacing.space_s)
@@ -183,10 +183,8 @@ impl EMelderApp {
             }
             EditClubMessage::PostalCode(postal_code_str) => {
                 let postal_code = postal_code_str.parse();
-                if let Ok(postal_code) = postal_code {
-                    if (11000..=99999).contains(&postal_code) {
-                        *self.club.get_sender_mut().get_postal_code_mut() = postal_code;
-                    }
+                if let Ok(postal_code) = postal_code && (11000..=99999).contains(&postal_code) {
+                    *self.club.get_sender_mut().get_postal_code_mut() = postal_code;
                 }
             }
             EditClubMessage::Town(town) => {
@@ -209,10 +207,8 @@ impl EMelderApp {
             }
             EditClubMessage::ClubNumber(club_number_str) => {
                 let club_number = club_number_str.parse();
-                if let Ok(club_number) = club_number {
-                    if (0..=9_999_999).contains(&club_number) {
-                        *self.club.get_number_mut() = club_number;
-                    }
+                if let Ok(club_number) = club_number && (0..=9_999_999).contains(&club_number) {
+                    *self.club.get_number_mut() = club_number;
                 }
             }
             EditClubMessage::County(county) => {
@@ -244,7 +240,7 @@ impl EMelderApp {
         Task::none()
     }
 
-    pub fn view_config(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_config(&self) -> Element<'_, <Self as Application>::Message> {
             widget::column::with_capacity(8)
                 .push(widget::row::with_capacity(2)
                     .align_y(Vertical::Center)
@@ -353,7 +349,7 @@ impl EMelderApp {
         Task::none()
     }
 
-    pub fn view_about(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_about(&self) -> Element<'_, <Self as Application>::Message> {
         let mut column = widget::column::with_capacity(7)
             .push(widget::text(translate!("about.about", &self.translations)))
             .push(widget::divider::horizontal::default())

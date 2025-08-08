@@ -90,7 +90,7 @@ pub enum DeletingMessage {
 
 impl EMelderApp {
     #[allow(clippy::too_many_lines)]
-    pub fn view_registering(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_registering(&self) -> Element<'_, <Self as Application>::Message> {
         widget::column::with_capacity(9)
             .push(widget::row::with_capacity(2)
                 .spacing(theme::active().cosmic().spacing.space_xs)
@@ -413,7 +413,7 @@ impl EMelderApp {
         Task::none()
     }
 
-    pub fn view_adding(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_adding(&self) -> Element<'_, <Self as Application>::Message> {
         widget::column::with_capacity(7)
             .push(widget::row::with_capacity(2)
                 .spacing(theme::active().cosmic().spacing.space_xxs)
@@ -512,7 +512,7 @@ impl EMelderApp {
         Task::none()
     }
 
-    pub fn view_edit_athlete(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_edit_athlete(&self) -> Element<'_, <Self as Application>::Message> {
         widget::column::with_capacity(2)
             .push(widget::column::with_capacity(2)
                 .push(widget::row::with_capacity(2)
@@ -666,7 +666,7 @@ impl EMelderApp {
         Task::none()
     }
 
-    pub fn view_deleting(&self) -> Element<<Self as Application>::Message> {
+    pub fn view_deleting(&self) -> Element<'_, <Self as Application>::Message> {
         widget::column::with_capacity(2)
             .push(widget::column::with_capacity(2)
                 .push(widget::row::with_capacity(2)

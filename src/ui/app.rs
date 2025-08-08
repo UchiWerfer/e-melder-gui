@@ -385,7 +385,7 @@ impl cosmic::Application for EMelderApp {
         }
     }
 
-    fn view(&self) -> Element<Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         if let Some(page) = self.nav.active_data::<Page>() {
             match page {
                 Page::Registering => self.view_registering(),
