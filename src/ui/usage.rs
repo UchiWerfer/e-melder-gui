@@ -4,6 +4,7 @@ use cosmic::{theme, widget, Application, Apply, Element};
 use cosmic::app::Task;
 use cosmic::iced::{Length, Pixels};
 use cosmic::iced::alignment::Vertical;
+use cosmic::iced_widget::tooltip::Position;
 use cosmic::widget::button::Builder;
 use cosmic::widget::Text;
 
@@ -189,13 +190,17 @@ impl EMelderApp {
                                     .width(Length::Fixed(150.0)))
                                 .push(widget::text(athlete.get_birth_year().to_string())
                                     .width(Length::Fixed(80.0)))
-                                .push(widget::button::text(translate!("register.table.add", &self.translations))
-                                    .on_press_maybe(if self.registering.athletes.iter().any(|reg_athlete| reg_athlete.index == index) {
-                                        None
+                                .push(
+                                    if self.registering.athletes.iter().all(|reg_athlete| reg_athlete.index != index) {
+                                        Element::from(widget::tooltip(widget::button::icon(widget::icon::from_name("list-add-symbolic"))
+                                                                          .on_press(Message::Registering(RegisteringMessage::Add(index))),
+                                                                      widget::text(translate!("register.table.add", &self.translations)),
+                                                                      Position::Bottom))
                                     }
                                     else {
-                                        Some(Message::Registering(RegisteringMessage::Add(index)))
-                                    }))
+                                        Element::from(widget::button::icon(widget::icon::from_name("list-add-symbolic")))
+                                    }
+                                )
                                 .into()
                         }))
                     .push_maybe(if self.athletes.iter().any(|athlete| matches_query(
@@ -253,8 +258,12 @@ impl EMelderApp {
                             .push(widget::text_input("", athlete.get_weight_category())
                                 .on_input(move |input| Message::Registering(RegisteringMessage::WeightCategory(input, index)))
                                 .width(Length::Fixed(80.0)))
-                            .push(widget::button::text(translate!("register.table.delete", &self.translations))
-                                .on_press(Message::Registering(RegisteringMessage::Delete(index))))
+                            .push(widget::tooltip(
+                                widget::button::icon(widget::icon::from_name("list-remove-symbolic"))
+                                    .on_press(Message::Registering(RegisteringMessage::Delete(index))),
+                                widget::text(translate!("register.table.delete", &self.translations)),
+                                Position::Bottom
+                            ))
                             .into()
                     }))
                 .push_maybe(if self.registering.athletes.is_empty() {
@@ -727,8 +736,10 @@ impl EMelderApp {
                         athlete.get_gender().render()), &self.translations)).width(Length::Fixed(80.0)))
                     .push(widget::text(translate!(&format!("add.belt.{}", athlete.get_belt().serialise()),
                     &self.translations)).width(Length::Fixed(150.0)))
-                    .push(widget::button::text(translate!("delete.delete", &self.translations))
-                        .on_press(Message::Deleting(DeletingMessage::Delete(index))))
+                    .push(widget::tooltip(widget::button::icon(widget::icon::from_name("edit-delete-symbolic"))
+                                              .on_press(Message::Deleting(DeletingMessage::Delete(index))),
+                                          widget::text(translate!("delete.delete", &self.translations)),
+                                          Position::Bottom))
                     .into()
             }))
                 .push_maybe(if self.athletes.is_empty() {
